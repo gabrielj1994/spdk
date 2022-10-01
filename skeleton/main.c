@@ -312,7 +312,7 @@ static void recv_req_from_client(struct req_context *ctx) {
                 // ctx->lba = req_pkt->lba;
                 memcpy(&ctx->op, &data[sizeof(ctx->lba)], sizeof(ctx->op));
                 printf("\nLOGGING: Populated Context Values [op=%d]\n", ctx->op);
-                if (ctx->op != WRITE || ctx->op != READ) {
+                if (ctx->op != WRITE && ctx->op != READ) {
                         printf("\nLOGGING: Invalid OP Value. Dropping Packet\n");
                         continue;
                 }
