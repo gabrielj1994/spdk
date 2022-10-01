@@ -365,7 +365,7 @@ static void handle_write_req(struct req_context *ctx) {
  */
 static void main_loop(void) {
 	struct req_context *ctx;
-	struct req_context *dummy_ctx;
+	struct req_context *dummy_ctx = malloc(sizeof *dummy_ctx); ;
 
 	/* PUT YOUR CODE HERE */
         printf("\nLOGGING: Attempt qpair alloc\n");
@@ -375,6 +375,9 @@ static void main_loop(void) {
                 fprintf(stderr, "Failed to create SPDK queue pair\n");
                 return;
         }
+
+        printf("\nLOGGING: Qpair alloc success\n");
+
 
         uint8_t dummy_data = 8;
 
