@@ -286,7 +286,7 @@ static void send_request_to_server(struct req_context *ctx) {
         // Combine hard-coded request with passed request context
         printf("\nLOGGING: Generating Request Packet\n");
         unsigned long eth_hdr_size = (sizeof(spdk_request)/sizeof(spdk_request[0]));
-        unsigned long req_size = sizeof(req_pkt->lba)+sizeof(req_pkt->op)+sizeof(*(req_pkt->req_data)*8);
+        unsigned long req_size = sizeof(req_pkt->lba)+sizeof(req_pkt->op)+(sizeof(*(req_pkt->req_data))*8);
         unsigned long packet_size = eth_hdr_size+req_size;
         char *request = malloc(packet_size);
         printf("\nLOGGING: Packet Size Information [eth_hdr=%lu, req_size=%lu, lba_size=%lu, op_size=%lu, data_size=%lu]\n", eth_hdr_size, req_size,
