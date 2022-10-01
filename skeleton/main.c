@@ -234,7 +234,7 @@ static void spdk_process_completions() {
  */
 static void handle_read_req(struct req_context *ctx) {
 	/* PUT YOUR CODE HERE */
-        if (ctx->op != READ || ctx->req_data != 8) {
+        if (ctx->op != READ || ctx->req_data* != 8) {
                 fprintf(stderr, "Dummy context improperly set up [ctx_op=%d, ctx_data=%d]\n", rc, ctx->req_data);
                 exit(1);
         }
