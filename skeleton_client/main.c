@@ -303,7 +303,7 @@ static void send_request_to_server(struct req_context *ctx) {
         mbuf->pkt_len = packet_size;
 
         // TODO: Remove sanity check
-        char *prtp = (char *)bufs[0];
+        char *prtp = (char *)data;
         uint16_t counter = 0;
         while (counter < packet_size+8) {
         	printf("%02hhx ", *prtp);
