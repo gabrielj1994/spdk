@@ -84,12 +84,13 @@ struct req_context {
 static struct spdk_nvme_ctrlr *selected_ctrlr;
 static struct spdk_nvme_ns *selected_ns;
 /* PUT YOUR CODE HERE */
-static struct spdk_nvme_qpair *qpair;
-
 struct callback_args {
 	volatile bool done;
 	char *buf;
 };
+
+static struct spdk_nvme_qpair *qpair;
+static struct callback_args cb_args;
 
 //LAB 2
 /*
@@ -272,21 +273,23 @@ static void spdk_process_completions() {
  */
 static void handle_read_req(struct req_context *ctx) {
 	/* PUT YOUR CODE HERE */
+        printf("\nLOGGING: Process Read Request\n");
         if (ctx->op != READ || *(ctx->req_data) != 8) {
                 fprintf(stderr, "Dummy context improperly set up [ctx_op=%d, ctx_data=%d]\n", ctx->op, *(ctx->req_data));
                 exit(1);
         }
 
         int rc;
-	struct callback_args cb_args;
+	// struct callback_args cb_args;
         int sector_sz;
 
         /* Get the sector size. */
         sector_sz = spdk_nvme_ns_get_sector_size(selected_ns);
         
         /* Allocate a DMA-safe host memory buffer. */
-        cb_args.buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
-                                   SPDK_ENV_SOCKET_ID_ANY, SPDK_MALLOC_DMA);
+        // printf("\nLOGGING: SPDK ZMalloc in Read\n");
+        // cb_args.buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
+        //                            SPDK_ENV_SOCKET_ID_ANY, SPDK_MALLOC_DMA);
 
         if (!cb_args.buf) {
                 fprintf(stderr, "Failed to allocate buffer\n");
@@ -315,19 +318,21 @@ static void handle_read_req(struct req_context *ctx) {
  */
 static void handle_write_req(struct req_context *ctx) {
 	/* PUT YOUR CODE HERE */
+        printf("\nLOGGING: Process Write Request\n");
         if (ctx->op != WRITE || *(ctx->req_data) != 8) {
                 fprintf(stderr, "Dummy context improperly set up [ctx_op=%d, ctx_data=%d]\n", ctx->op, *(ctx->req_data));
                 exit(1);
         }
 
         int rc;
-	struct callback_args cb_args;
+	// struct callback_args cb_args;
         int sector_sz;
 
         /* Get the sector size. */
         sector_sz = spdk_nvme_ns_get_sector_size(selected_ns);
         
         /* Allocate a DMA-safe host memory buffer. */
+        printf("\nLOGGING: SPDK ZMalloc in Write\n");
         cb_args.buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
                                    SPDK_ENV_SOCKET_ID_ANY, SPDK_MALLOC_DMA);
 
@@ -363,6 +368,8 @@ static void main_loop(void) {
 	struct req_context *dummy_ctx;
 
 	/* PUT YOUR CODE HERE */
+        printf("\nLOGGING: Attempt qpair alloc\n");
+
         qpair = spdk_nvme_ctrlr_alloc_io_qpair(selected_ctrlr, NULL, 0);
         if (!qpair) {
                 fprintf(stderr, "Failed to create SPDK queue pair\n");
@@ -382,6 +389,7 @@ static void main_loop(void) {
 	while (1)  {
                 //TODO: Remove test block
                 // ctx = recv_req_from_client();
+                printf("\nLOGGING: Process context\n");
                 ctx = dummy_ctx;
                 if (ctx) {
                         if (ctx->op == READ) {
@@ -495,6 +503,8 @@ static void dpdk_init(void) {
 					portid);
 	}
 	/* >8 End of initializing all ports. */
+        printf("\nLOGGING: Port Initialization Complete\n");
+
 
 	if (rte_lcore_count() > 1)
 		printf("\nWARNING: Too many lcores enabled. Only 1 used.\n");
