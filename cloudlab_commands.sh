@@ -42,6 +42,7 @@ sudo PCI_BLOCKED=0000:c5:00.0 ./scripts/setup.sh
 #===
 #~/update_lab2.sh
 cd ~/GIT/spdk/
+git checkout Lab2
 git pull
 cp ~/GIT/spdk/hello_world/hello_world.c ~/hello_world/hello_world.c
 cd ~/hello_world

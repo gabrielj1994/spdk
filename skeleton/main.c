@@ -291,17 +291,6 @@ static void recv_req_from_client(struct req_context *ctx) {
                                 printf("\n");
                         ++prtp;
                 }
-                /*
-                received:
-                40 50 68 0a 
-                00 20 00 00 
-                40 50 08 d6 
-                1c 00 00 00 
-                80 00 01 00 
-                01 00 02 00 
-                00 00 00 00 
-                00 00 
-                */
 
                 // struct rte_ether_hdr *ether_hdr;
                 // struct rte_ether_addr ether_src;
@@ -323,6 +312,10 @@ static void recv_req_from_client(struct req_context *ctx) {
                 // ctx->lba = req_pkt->lba;
                 memcpy(&ctx->op, &data[sizeof(ctx->lba)], sizeof(ctx->op));
                 printf("\nLOGGING: Populated Context Values [op=%d]\n", ctx->op);
+                if (ctx->op != WRITE || ctx->op != READ) {
+                        printf("\nLOGGING: Invalid OP Value. Dropping Packet\n");
+                        continue;
+                }
                 // ctx->op = req_pkt->op;
                 printf("\nLOGGING: Populating Context Values [data]\n");
                 // ctx->req_data = malloc(sizeof(req_pkt->req_data)/sizeof(req_pkt->req_data[0]));
@@ -393,9 +386,9 @@ static void handle_read_req(struct req_context *ctx) {
 static void handle_write_req(struct req_context *ctx) {
 	/* PUT YOUR CODE HERE */
         printf("\nLOGGING: Process Write Request\n");
-        if (ctx->op != WRITE || *(ctx->req_data) != 8) {
-                fprintf(stderr, "Dummy context improperly set up [ctx_op=%d, ctx_data=%d]\n", ctx->op, *(ctx->req_data));
-                exit(1);
+        if (ctx->op != WRITE) {
+                fprintf(stderr, "Invalid context op value for write operation [ctx_op=%d]\n", ctx->op);
+                return;
         }
 
         int rc;
@@ -417,8 +410,8 @@ static void handle_write_req(struct req_context *ctx) {
         cb_args.done = false;
 
         /* Write the string into the buffer.  */
-        snprintf(cb_args.buf, sector_sz, "%s", "Hello world!\n");
-        // memcpy(&cb_args.buf, ctx->req_data, 8);
+        // snprintf(cb_args.buf, sector_sz, "%s", "Hello world!\n");
+        memcpy(cb_args.buf, ctx->req_data, 8);
 
         /* Submit a cmd to write data into the 1st sector. */
         rc = spdk_nvme_ns_cmd_write(
