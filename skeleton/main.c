@@ -250,7 +250,7 @@ static void read_complete(void *args, const struct spdk_nvme_cpl *completion) {
         /* Unblock the while loop in main_loop(). */
         args_ptr->done = true;
         printf("\nLOGGING: [data=%s]\n", args_ptr->buf);
-        send_resp_to_client(args_ptr->req_ctx);
+        send_resp_to_client(args_ptr);
 }
 
 /*
@@ -282,7 +282,7 @@ static void recv_req_from_client(struct req_context *ctx) {
         ctx->lba = req_pkt->lba;
         ctx->op = req_pkt->op;
         ctx->req_data = req_pkt->req_data;
-        printf("\nLOGGING: Received Context Information [op=%d, lba=%llu, req_data=%hhu]\n", req_pkt->op, req_pkt->lba, *(req_pkt->req_data));
+        printf("\nLOGGING: Received Context Information [op=%d, lba=%lu, req_data=%hhu]\n", req_pkt->op, req_pkt->lba, *(req_pkt->req_data));
 }
 
 /* 
