@@ -289,7 +289,8 @@ static void send_request_to_server(struct req_context *ctx) {
         unsigned long req_size = sizeof(req_pkt->lba)+sizeof(req_pkt->op)+sizeof(*(req_pkt->req_data));
         unsigned long packet_size = eth_hdr_size+req_size;
         char *request = malloc(packet_size);
-        printf("\nLOGGING: Packet Size Information [eth_hdr=%lu, req_size=%lu]\n", eth_hdr_size, req_size);
+        printf("\nLOGGING: Packet Size Information [eth_hdr=%lu, req_size=%lu, lba_size=%lu, op_size=%lu, data_size=%lu]\n", eth_hdr_size, req_size,
+         sizeof(req_pkt->lba), sizeof(req_pkt->op), sizeof(*(req_pkt->req_data)));
 
         memcpy(request, spdk_request, eth_hdr_size);
         memcpy(&request[eth_hdr_size], req_pkt, req_size);
@@ -305,6 +306,16 @@ static void send_request_to_server(struct req_context *ctx) {
         char *prtp = (char *)bufs[0];
         uint16_t counter = 0;
         while (counter < packet_size+8) {
+        	printf("%02hhx ", *prtp);
+        	++counter;
+        	if (counter % 4 == 0)
+        		printf("\n");
+        	++prtp;
+        }
+
+        prtp = (char *)req_pkt;
+        counter = 0;
+        while (counter < req_size+4) {
         	printf("%02hhx ", *prtp);
         	++counter;
         	if (counter % 4 == 0)
