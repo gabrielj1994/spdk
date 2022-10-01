@@ -286,16 +286,20 @@ static void send_request_to_server(struct req_context *ctx) {
         // Combine hard-coded request with passed request context
         printf("\nLOGGING: Generating Request Packet\n");
         unsigned long eth_hdr_size = (sizeof(spdk_request)/sizeof(spdk_request[0]));
-        // unsigned long req_size = sizeof(req_pkt->lba)+sizeof(req_pkt->op);
-        unsigned long req_size = sizeof(*req_pkt);
+        unsigned long lba_size = sizeof(req_pkt->lba);
+        unsigned long op_size = sizeof(req_pkt->op);
+        unsigned long req_size = lba_size + op_size;
+        // unsigned long req_size = sizeof(*req_pkt);
         unsigned long data_size = sizeof(req_pkt->req_data)/sizeof(req_pkt->req_data[0]);
         unsigned long packet_size = eth_hdr_size+req_size+data_size;
         char *request = malloc(packet_size);
         printf("\nLOGGING: Packet Size Information [eth_hdr=%lu, req_size=%lu, lba_size=%lu, op_size=%lu, data_size=%lu]\n", eth_hdr_size, req_size,
-         sizeof(req_pkt->lba), sizeof(req_pkt->op), data_size);
+         lba_size, op_size, data_size);
 
         memcpy(request, spdk_request, eth_hdr_size);
-        memcpy(&request[eth_hdr_size], req_pkt, req_size);
+        // memcpy(&request[eth_hdr_size], req_pkt, req_size);
+        memcpy(&request[eth_hdr_size], &req_pkt->lba, sizeof(req_pkt->lba));
+        memcpy(&request[eth_hdr_size+lba_size], &req_pkt->op, sizeof(req_pkt->op));
         memcpy(&request[eth_hdr_size+req_size], req_pkt->req_data, data_size);
 
 
@@ -315,6 +319,7 @@ static void send_request_to_server(struct req_context *ctx) {
         		printf("\n");
         	++prtp;
         }
+        printf("\n\n");
 
         prtp = (char *)req_pkt;
         counter = 0;
