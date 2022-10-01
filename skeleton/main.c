@@ -283,9 +283,11 @@ static void recv_req_from_client(struct req_context *ctx) {
         ctx->ether_hdr = rte_pktmbuf_mtod_offset(bufs[0], struct rte_ether_hdr *, 0);
         printf("\nLOGGING: Retrieving Request Information\n");
         req_pkt = rte_pktmbuf_mtod_offset(bufs[0], struct request_packet *, sizeof(struct rte_ether_hdr));
-        printf("\nLOGGING: Populating Context Values\n");
+        printf("\nLOGGING: Populating Context Values [lba]\n");
         ctx->lba = req_pkt->lba;
+        printf("\nLOGGING: Populating Context Values [op]\n");
         ctx->op = req_pkt->op;
+        printf("\nLOGGING: Populating Context Values [data]\n");
         ctx->req_data = req_pkt->req_data;
         printf("\nLOGGING: Received Context Information [op=%d, lba=%lu, req_data=%hhu]\n", req_pkt->op, req_pkt->lba, *(req_pkt->req_data));
 }
@@ -398,6 +400,8 @@ static void handle_write_req(struct req_context *ctx) {
 static void main_loop(void) {
 	// struct req_context *dummy_ctx;
 	struct req_context *ctx = malloc(sizeof *ctx);
+        ctx->req_data = malloc(sizeof ctx->req_data);
+
 
 	/* PUT YOUR CODE HERE */
         printf("\nLOGGING: Attempt qpair alloc\n");
