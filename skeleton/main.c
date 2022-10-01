@@ -273,12 +273,17 @@ static void recv_req_from_client(struct req_context *ctx) {
                         bufs, BURST_SIZE);
         }
 
+        printf("\nLOGGING: Received RX Burst\n");
+
         // struct rte_ether_hdr *ether_hdr;
         // struct rte_ether_addr ether_src;
         struct request_packet *req_pkt;
 
+        printf("\nLOGGING: Retrieving Header Information\n");
         ctx->ether_hdr = rte_pktmbuf_mtod_offset(bufs[0], struct rte_ether_hdr *, 0);
+        printf("\nLOGGING: Retrieving Request Information\n");
         req_pkt = rte_pktmbuf_mtod_offset(bufs[0], struct request_packet *, sizeof(struct rte_ether_hdr));
+        printf("\nLOGGING: Populating Context Values\n");
         ctx->lba = req_pkt->lba;
         ctx->op = req_pkt->op;
         ctx->req_data = req_pkt->req_data;
