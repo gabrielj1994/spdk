@@ -183,7 +183,7 @@ port_init(uint16_t port, struct rte_mempool *mbuf_pool) {
 /* >8 End of main functional part of port initialization. */
 
 static void write_complete(void *args, const struct spdk_nvme_cpl *completion) {
-        printf("LOGGING: Write complete.");
+        printf("\nLOGGING: Write complete.\n");
         int rc;
         struct callback_args *cb_args = args;
         
@@ -199,7 +199,7 @@ static void write_complete(void *args, const struct spdk_nvme_cpl *completion) {
 }
 
 static void read_complete(void *args, const struct spdk_nvme_cpl *completion) {
-        printf("LOGGING: Read complete.");
+        printf("\nLOGGING: Read complete.\n");
 	struct callback_args *cb_args = args;
 
         /* Check if there's an error for the read request. */
@@ -218,7 +218,7 @@ static void read_complete(void *args, const struct spdk_nvme_cpl *completion) {
          * Print out the string data of the first sector. Expect to see
          * "Hello world!\n".
          */
-        printf("%s", cb_args->buf);
+        printf("\n%s\n", cb_args->buf);
 }
 
 /*
@@ -228,7 +228,7 @@ static void read_complete(void *args, const struct spdk_nvme_cpl *completion) {
  */
 static struct req_context *recv_req_from_client() {
 	/* PUT YOUR CODE HERE */
-        printf("LOGGING: Receive Request from Client");
+        printf("\nLOGGING: Receive Request from Client\n");
 
         struct rte_mbuf *bufs[BURST_SIZE];
         uint16_t nb_rx = 0;
@@ -255,7 +255,7 @@ static struct req_context *recv_req_from_client() {
  */
 static void send_resp_to_client(struct req_context *ctx) {
         /* PUT YOUR CODE HERE */
-        printf("LOGGING: Send Response to Client");
+        printf("\nLOGGING: Send Response to Client\n");
 
 }
 
@@ -264,7 +264,7 @@ static void send_resp_to_client(struct req_context *ctx) {
  */
 static void spdk_process_completions() {
 	/* PUT YOUR CODE HERE */
-        printf("LOGGING: QPair Completions.");
+        printf("\nLOGGING: QPair Completions.\n");
         spdk_nvme_qpair_process_completions(qpair, 0);
 }
 
@@ -457,7 +457,7 @@ static void attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 
 //LAB 2
 static void dpdk_init(void) {
-        printf("LOGGING: DPDK Initialization\n");
+        printf("\nLOGGING: DPDK Initialization\n");
 
         struct rte_mempool *mbuf_pool;
 	unsigned nb_ports;
