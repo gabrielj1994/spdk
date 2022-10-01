@@ -442,6 +442,7 @@ static void main_loop(void) {
         /* Dummy req_context */
         dummy_ctx->lba = 0;
         dummy_ctx->op = 1; // Write first
+        dummy_ctx->req_data = malloc(sizeof *dummy_ctx->req_data);
         dummy_ctx->req_data[0] = dummy_data;
         // dummy_ctx->rc;
         // dummy_ctx->resp_data;
