@@ -181,6 +181,44 @@ port_init(uint16_t port, struct rte_mempool *mbuf_pool) {
 }
 /* >8 End of main functional part of port initialization. */
 
+static void write_complete(void *args, const struct spdk_nvme_cpl *completion) {
+        printf("LOGGING: Write complete.");
+        int rc;
+        struct callback_args *cb_args = args;
+        
+        /* Check if there's an error for the write request. */
+        if (spdk_nvme_cpl_is_error(completion)) {
+                spdk_nvme_qpair_print_completion(
+                    qpair, (struct spdk_nvme_cpl *)completion);
+                fprintf(stderr, "I/O error status: %s\n",
+                        spdk_nvme_cpl_get_status_string(&completion->status));
+                fprintf(stderr, "Failed to write, aborting run\n");
+                exit(1);
+        }
+}
+
+static void read_complete(void *args, const struct spdk_nvme_cpl *completion) {
+        printf("LOGGING: Read complete.");
+	struct callback_args *cb_args = args;
+
+        /* Check if there's an error for the read request. */
+        if (spdk_nvme_cpl_is_error(completion)) {
+                spdk_nvme_qpair_print_completion(
+                    qpair, (struct spdk_nvme_cpl *)completion);
+                fprintf(stderr, "I/O error status: %s\n",
+                        spdk_nvme_cpl_get_status_string(&completion->status));
+                fprintf(stderr, "Failed to read, aborting run\n");
+                exit(1);
+        }
+
+        /* Unblock the while loop in main_loop(). */
+        cb_args->done = true;
+        /*
+         * Print out the string data of the first sector. Expect to see
+         * "Hello world!\n".
+         */
+        printf("%s", cb_args->buf);
+}
 
 /*
  * Try to receive a storage request from the client using DPDK.
@@ -315,45 +353,6 @@ static void handle_write_req(struct req_context *ctx) {
                 fprintf(stderr, "Failed to submit write cmd [error_code=%d]\n", rc);
                 exit(1);
         }
-}
-
-static void write_complete(void *args, const struct spdk_nvme_cpl *completion) {
-        printf("LOGGING: Write complete.");
-        int rc;
-        struct callback_args *cb_args = args;
-        
-        /* Check if there's an error for the write request. */
-        if (spdk_nvme_cpl_is_error(completion)) {
-                spdk_nvme_qpair_print_completion(
-                    qpair, (struct spdk_nvme_cpl *)completion);
-                fprintf(stderr, "I/O error status: %s\n",
-                        spdk_nvme_cpl_get_status_string(&completion->status));
-                fprintf(stderr, "Failed to write, aborting run\n");
-                exit(1);
-        }
-}
-
-static void read_complete(void *args, const struct spdk_nvme_cpl *completion) {
-        printf("LOGGING: Read complete.");
-	struct callback_args *cb_args = args;
-
-        /* Check if there's an error for the read request. */
-        if (spdk_nvme_cpl_is_error(completion)) {
-                spdk_nvme_qpair_print_completion(
-                    qpair, (struct spdk_nvme_cpl *)completion);
-                fprintf(stderr, "I/O error status: %s\n",
-                        spdk_nvme_cpl_get_status_string(&completion->status));
-                fprintf(stderr, "Failed to read, aborting run\n");
-                exit(1);
-        }
-
-        /* Unblock the while loop in main_loop(). */
-        cb_args->done = true;
-        /*
-         * Print out the string data of the first sector. Expect to see
-         * "Hello world!\n".
-         */
-        printf("%s", cb_args->buf);
 }
 
 /*
