@@ -279,14 +279,14 @@ static void send_request_to_server(struct req_context *ctx) {
         if (ctx->op == WRITE) {
                 printf("\nLOGGING: Preparing Write Request Data.\n");
                 req_pkt->req_data = ctx->req_data;
-                printf("\nLOGGING: Sanity check [req_data=%hhu]\n", req_pkt->req_data[0]);
+                printf("\nLOGGING: Sanity check [req_data=%hhu]\n", req_pkt->req_data[3]);
 
         }
 
         // Combine hard-coded request with passed request context
         printf("\nLOGGING: Generating Request Packet\n");
         unsigned long eth_hdr_size = (sizeof(spdk_request)/sizeof(spdk_request[0]));
-        unsigned long req_size = sizeof(req_pkt->lba)+sizeof(req_pkt->op)+sizeof(*(req_pkt->req_data));
+        unsigned long req_size = sizeof(req_pkt->lba)+sizeof(req_pkt->op)+sizeof(*(req_pkt->req_data)*8);
         unsigned long packet_size = eth_hdr_size+req_size;
         char *request = malloc(packet_size);
         printf("\nLOGGING: Packet Size Information [eth_hdr=%lu, req_size=%lu, lba_size=%lu, op_size=%lu, data_size=%lu]\n", eth_hdr_size, req_size,
@@ -517,9 +517,11 @@ static void main_loop(void) {
         /* Dummy req_context */
         dummy_ctx->lba = 0;
         dummy_ctx->op = 1; // Write first
-        dummy_ctx->req_data = malloc(sizeof *dummy_ctx->req_data);
-        dummy_ctx->req_data[0] = dummy_data;
-        printf("\nLOGGING: Sanity check [req_data=%hhu]\n", dummy_ctx->req_data[0]);
+        dummy_ctx->req_data = malloc(sizeof(*dummy_ctx->req_data)*8);
+        for (int i = 0; i < 8; i++) {
+                dummy_ctx->req_data[i] = dummy_data;
+                printf("\nLOGGING: Sanity check [req_data=%hhu]\n", dummy_ctx->req_data[i]);
+        }
 
         // dummy_ctx->rc;
         // dummy_ctx->resp_data;
