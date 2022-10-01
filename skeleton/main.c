@@ -197,6 +197,26 @@ port_init(uint16_t port, struct rte_mempool *mbuf_pool) {
 }
 /* >8 End of main functional part of port initialization. */
 
+/*
+ * Send the response back to the client using DPDK.
+ *
+ * This function should be invoked by SPDK's callback functions.
+ * For the first step, use a mock implementation here to test main_loop().
+ */
+static void send_resp_to_client(struct callback_args *cb_args) {
+        /* PUT YOUR CODE HERE */
+        printf("\nLOGGING: Send Response to Client\n");
+        struct rte_ether_addr ether_src;
+        struct rte_ether_hdr *ether_hdr = rte_pktmbuf_mtod_offset(bufs[0], struct rte_ether_hdr *, 0);
+
+        //ether frame
+        rte_ether_addr_copy(&ether_hdr->src_addr, &ether_src);
+        rte_ether_addr_copy(&ether_hdr->dst_addr, &ether_hdr->src_addr);
+        rte_ether_addr_copy(&ether_src, &ether_hdr->dst_addr);
+
+        rte_eth_tx_burst(LAB2_PORT_ID, 0, bufs, 1);
+}
+
 static void write_complete(void *args, const struct spdk_nvme_cpl *completion) {
         printf("\nLOGGING: Write complete.\n");
         int rc;
@@ -263,26 +283,6 @@ static void recv_req_from_client(struct req_context *ctx) {
         ctx->op = req_pkt->op;
         ctx->req_data = req_pkt->req_data;
         printf("\nLOGGING: Received Context Information [op=%d, lba=%llu, req_data=%hhu]\n", req_pkt->op, req_pkt->lba, *(req_pkt->req_data));
-}
-
-/*
- * Send the response back to the client using DPDK.
- *
- * This function should be invoked by SPDK's callback functions.
- * For the first step, use a mock implementation here to test main_loop().
- */
-static void send_resp_to_client(struct callback_args *cb_args) {
-        /* PUT YOUR CODE HERE */
-        printf("\nLOGGING: Send Response to Client\n");
-        struct rte_ether_addr ether_src;
-        struct rte_ether_hdr *ether_hdr = rte_pktmbuf_mtod_offset(bufs[0], struct rte_ether_hdr *, 0);
-
-        //ether frame
-        rte_ether_addr_copy(&ether_hdr->src_addr, &ether_src);
-        rte_ether_addr_copy(&ether_hdr->dst_addr, &ether_hdr->src_addr);
-        rte_ether_addr_copy(&ether_src, &ether_hdr->dst_addr);
-
-        rte_eth_tx_burst(LAB2_PORT_ID, 0, bufs, 1);
 }
 
 /* 
@@ -428,7 +428,7 @@ static void main_loop(void) {
                 //TODO: Remove test block
                 printf("\nLOGGING: Process context\n");
                 bufs[0] = rte_pktmbuf_alloc(mbuf_pool);
-                ctx = recv_req_from_client();
+                recv_req_from_client(ctx);
                 // ctx = dummy_ctx;
                 if (ctx) {
                         if (ctx->op == READ) {
@@ -532,8 +532,6 @@ static void dpdk_init(void) {
 
 	if (rte_lcore_count() > 1)
 		printf("\nWARNING: Too many lcores enabled. Only 1 used.\n");
-
-        return mbuf_pool;
 }
 
 static void cleanup(void) {
