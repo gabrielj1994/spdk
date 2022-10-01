@@ -276,18 +276,18 @@ static void recv_req_from_client(struct req_context *ctx) {
         printf("\nLOGGING: Received RX Burst\n");
 
         // TODO: Remove sanity check
-        // char *data;
+        char *data;
 
-        // data = rte_pktmbuf_mtod(bufs[0], char*);
-        // char *prtp = (char *)data;
-        // uint16_t counter = 0;
-        // while (counter < 30) {
-        // 	printf("%02hhx ", *prtp);
-        // 	++counter;
-        // 	if (counter % 4 == 0)
-        // 		printf("\n");
-        // 	++prtp;
-        // }
+        data = rte_pktmbuf_mtod(bufs[0], char*, 0);
+        char *prtp = (char *)data;
+        uint16_t counter = 0;
+        while (counter < 30) {
+        	printf("%02hhx ", *prtp);
+        	++counter;
+        	if (counter % 4 == 0)
+        		printf("\n");
+        	++prtp;
+        }
         /*
         received:
         40 50 68 0a 
@@ -302,20 +302,25 @@ static void recv_req_from_client(struct req_context *ctx) {
 
         // struct rte_ether_hdr *ether_hdr;
         // struct rte_ether_addr ether_src;
-        struct request_packet *req_pkt;
+        // struct request_packet *req_pkt = malloc(sizeof(*req_pkt));
 
         printf("\nLOGGING: Retrieving Header Information\n");
         ctx->ether_hdr = rte_pktmbuf_mtod_offset(bufs[0], struct rte_ether_hdr *, 0);
         printf("\nLOGGING: Retrieving Request Information\n");
-        req_pkt = rte_pktmbuf_mtod_offset(bufs[0], struct request_packet *, sizeof(struct rte_ether_hdr));
-        printf("\nLOGGING: Populating Context Values [lba=%lu]\n", req_pkt->lba);
-        ctx->lba = req_pkt->lba;
-        printf("\nLOGGING: Populating Context Values [op=%d]\n", req_pkt->op);
-        ctx->op = req_pkt->op;
+        // req_pkt = rte_pktmbuf_mtod_offset(bufs[0], struct request_packet *, sizeof(struct rte_ether_hdr));
+        char *data = rte_pktmbuf_mtod_offset(bufs[0], char *, sizeof(struct rte_ether_hdr));
+        // printf("\nLOGGING: Populating Context Values [lba=%lu]\n", req_pkt->lba);
+        memcpy(&ctx->lba, data, sizeof(ctx->lba));
+        printf("\nLOGGING: Populated Context Values [lba=%lu]\n", ctx->lba);
+        // ctx->lba = req_pkt->lba;
+        memcpy(&ctx->op, &data[sizeof(ctx->lba)], sizeof(ctx->op));
+        printf("\nLOGGING: Populated Context Values [op=%d]\n", ctx->op);
+        // ctx->op = req_pkt->op;
         printf("\nLOGGING: Populating Context Values [data]\n");
-        ctx->req_data = malloc(sizeof(req_pkt->req_data)/sizeof(req_pkt->req_data[0]));
-        memcpy(ctx->req_data, &(req_pkt->req_data), sizeof(req_pkt->req_data)/sizeof(req_pkt->req_data[0]));
-        printf("\nLOGGING: Received Context Information [op=%d, lba=%lu, req_data=%hhu]\n", req_pkt->op, req_pkt->lba, ctx->req_data[0]);
+        // ctx->req_data = malloc(sizeof(req_pkt->req_data)/sizeof(req_pkt->req_data[0]));
+        ctx->req_data = malloc(8);
+        memcpy(ctx->req_data, &data[sizeof(ctx->lba)+sizeof(ctx->op)], 8);
+        printf("\nLOGGING: Received Context Information [op=%d, lba=%lu, req_data=%hhu]\n", ctx->op, ctx->lba, ctx->req_data[0]);
 }
 
 /* 
