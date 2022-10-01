@@ -67,10 +67,21 @@ struct request_packet {
         /* Request fields. */
         enum opcode op;
         uint64_t lba;         /* The LBA of the request. */
-        uint8_t req_data;    /* The request data (valid for write requests). */
+        uint8_t *req_data;    /* The request data (valid for write requests). */
+};
+
+struct response_packet {
+        /* Request fields. */
+        enum opcode op;
+        uint64_t lba;         /* The LBA of the request. */
+        uint8_t *req_data;    /* The request data (valid for write requests). */
 };
 
 struct req_context {
+        /* Request metadata. */
+        struct rte_ether_hdr *ether_hdr; /* The ether frame header of the request containing source and destination MAC addresses. */
+        bool is_success;
+
         /* Request fields. */
         enum opcode op;
         uint64_t lba;         /* The LBA of the request. */
@@ -86,11 +97,15 @@ static struct spdk_nvme_ns *selected_ns;
 /* PUT YOUR CODE HERE */
 struct callback_args {
 	volatile bool done;
+        struct req_context *req_ctx;
 	char *buf;
 };
 
 static struct spdk_nvme_qpair *qpair;
 static struct callback_args cb_args;
+
+struct rte_mempool *mbuf_pool;
+struct rte_mbuf *bufs[BURST_SIZE];
 
 //LAB 2
 /*
@@ -185,7 +200,7 @@ port_init(uint16_t port, struct rte_mempool *mbuf_pool) {
 static void write_complete(void *args, const struct spdk_nvme_cpl *completion) {
         printf("\nLOGGING: Write complete.\n");
         int rc;
-        struct callback_args *cb_args = args;
+        struct callback_args *args_ptr = args;
         
         /* Check if there's an error for the write request. */
         if (spdk_nvme_cpl_is_error(completion)) {
@@ -200,7 +215,7 @@ static void write_complete(void *args, const struct spdk_nvme_cpl *completion) {
 
 static void read_complete(void *args, const struct spdk_nvme_cpl *completion) {
         printf("\nLOGGING: Read complete.\n");
-	struct callback_args *cb_args = args;
+	struct callback_args *args_ptr = args;
 
         /* Check if there's an error for the read request. */
         if (spdk_nvme_cpl_is_error(completion)) {
@@ -213,24 +228,24 @@ static void read_complete(void *args, const struct spdk_nvme_cpl *completion) {
         }
 
         /* Unblock the while loop in main_loop(). */
-        cb_args->done = true;
-        /*
-         * Print out the string data of the first sector. Expect to see
-         * "Hello world!\n".
-         */
-        printf("\n%s\n", cb_args->buf);
+        args_ptr->done = true;
+        printf("\nLOGGING: [data=%s]\n", args_ptr->buf);
+        send_resp_to_client(args_ptr->req_ctx);
 }
 
 /*
  * Try to receive a storage request from the client using DPDK.
  *
  * For the first step, use a mock implementation here to test main_loop().
+ * 
+ * Should populate the passed pointers with the relevant data.
  */
-static struct req_context *recv_req_from_client() {
+static void recv_req_from_client(struct req_context *ctx) {
 	/* PUT YOUR CODE HERE */
         printf("\nLOGGING: Receive Request from Client\n");
+	// struct req_context *ctx = malloc(sizeof *ctx);
 
-        struct rte_mbuf *bufs[BURST_SIZE];
+        // struct rte_mbuf *bufs[BURST_SIZE];
         uint16_t nb_rx = 0;
         
         while (nb_rx == 0) {
@@ -238,13 +253,16 @@ static struct req_context *recv_req_from_client() {
                         bufs, BURST_SIZE);
         }
 
-        struct rte_ether_hdr *ether_hdr;
-        struct rte_ether_addr ether_src;
+        // struct rte_ether_hdr *ether_hdr;
+        // struct rte_ether_addr ether_src;
         struct request_packet *req_pkt;
 
-        ether_hdr = rte_pktmbuf_mtod_offset(bufs[0], struct rte_ether_hdr *, 0);
+        ctx->ether_hdr = rte_pktmbuf_mtod_offset(bufs[0], struct rte_ether_hdr *, 0);
         req_pkt = rte_pktmbuf_mtod_offset(bufs[0], struct request_packet *, sizeof(struct rte_ether_hdr));
-
+        ctx->lba = req_pkt->lba;
+        ctx->op = req_pkt->op;
+        ctx->req_data = req_pkt->req_data;
+        printf("\nLOGGING: Received Context Information [op=%d, lba=%llu, req_data=%hhu]\n", req_pkt->op, req_pkt->lba, *(req_pkt->req_data));
 }
 
 /*
@@ -253,10 +271,18 @@ static struct req_context *recv_req_from_client() {
  * This function should be invoked by SPDK's callback functions.
  * For the first step, use a mock implementation here to test main_loop().
  */
-static void send_resp_to_client(struct req_context *ctx) {
+static void send_resp_to_client(struct callback_args *cb_args) {
         /* PUT YOUR CODE HERE */
         printf("\nLOGGING: Send Response to Client\n");
+        struct rte_ether_addr ether_src;
+        struct rte_ether_hdr *ether_hdr = rte_pktmbuf_mtod_offset(bufs[0], struct rte_ether_hdr *, 0);
 
+        //ether frame
+        rte_ether_addr_copy(&ether_hdr->src_addr, &ether_src);
+        rte_ether_addr_copy(&ether_hdr->dst_addr, &ether_hdr->src_addr);
+        rte_ether_addr_copy(&ether_src, &ether_hdr->dst_addr);
+
+        rte_eth_tx_burst(LAB2_PORT_ID, 0, bufs, 1);
 }
 
 /* 
@@ -274,17 +300,17 @@ static void spdk_process_completions() {
 static void handle_read_req(struct req_context *ctx) {
 	/* PUT YOUR CODE HERE */
         printf("\nLOGGING: Process Read Request\n");
-        if (ctx->op != READ || *(ctx->req_data) != 8) {
-                fprintf(stderr, "Dummy context improperly set up [ctx_op=%d, ctx_data=%d]\n", ctx->op, *(ctx->req_data));
+        if (ctx->op != READ) {
+                fprintf(stderr, "Invalid context for read operation [ctx_op=%d, ctx_data=%d]\n", ctx->op, *(ctx->req_data));
                 exit(1);
         }
 
         int rc;
 	// struct callback_args cb_args;
-        int sector_sz;
+        // int sector_sz;
 
         /* Get the sector size. */
-        sector_sz = spdk_nvme_ns_get_sector_size(selected_ns);
+        // sector_sz = spdk_nvme_ns_get_sector_size(selected_ns);
         
         /* Allocate a DMA-safe host memory buffer. */
         // printf("\nLOGGING: SPDK ZMalloc in Read\n");
@@ -296,6 +322,7 @@ static void handle_read_req(struct req_context *ctx) {
                 return;
         }
         cb_args.done = false;
+        cb_args.req_ctx = ctx;
 
         /* Now submit a cmd to read data from the 1st sector. */
         rc = spdk_nvme_ns_cmd_read(
@@ -332,14 +359,14 @@ static void handle_write_req(struct req_context *ctx) {
         sector_sz = spdk_nvme_ns_get_sector_size(selected_ns);
         
         /* Allocate a DMA-safe host memory buffer. */
-        printf("\nLOGGING: SPDK ZMalloc in Write\n");
-        cb_args.buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
-                                   SPDK_ENV_SOCKET_ID_ANY, SPDK_MALLOC_DMA);
+        // printf("\nLOGGING: SPDK ZMalloc in Write\n");
+        // cb_args.buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
+        //                            SPDK_ENV_SOCKET_ID_ANY, SPDK_MALLOC_DMA);
 
-        if (!cb_args.buf) {
-                fprintf(stderr, "Failed to allocate buffer\n");
-                return;
-        }
+        // if (!cb_args.buf) {
+        //         fprintf(stderr, "Failed to allocate buffer\n");
+        //         return;
+        // }
         cb_args.done = false;
 
         /* Write the string into the buffer.  */
@@ -348,7 +375,7 @@ static void handle_write_req(struct req_context *ctx) {
         /* Submit a cmd to write data into the 1st sector. */
         rc = spdk_nvme_ns_cmd_write(
             selected_ns, qpair,
-	    cb_args.buf,    /* The data to write */
+	    ctx->req_data,    /* The data to write */
             0,              /* Starting LBA to write the data */
             1,              /* Length in sectors */
             write_complete, /* Callback to invoke when the write is done. */
@@ -364,8 +391,8 @@ static void handle_write_req(struct req_context *ctx) {
  * The main application logic.
  */
 static void main_loop(void) {
-	struct req_context *ctx;
-	struct req_context *dummy_ctx = malloc(sizeof *dummy_ctx); ;
+	// struct req_context *dummy_ctx;
+	struct req_context *ctx = malloc(sizeof *ctx);
 
 	/* PUT YOUR CODE HERE */
         printf("\nLOGGING: Attempt qpair alloc\n");
@@ -373,27 +400,36 @@ static void main_loop(void) {
         qpair = spdk_nvme_ctrlr_alloc_io_qpair(selected_ctrlr, NULL, 0);
         if (!qpair) {
                 fprintf(stderr, "Failed to create SPDK queue pair\n");
-                return;
+                exit(1);
         }
 
         printf("\nLOGGING: Qpair alloc success\n");
 
-
-        uint8_t dummy_data = 8;
-
         /* Dummy req_context */
-        dummy_ctx->lba = 0;
-        dummy_ctx->op = 1; // Write first
-        dummy_ctx->req_data = &dummy_data;
+        // uint8_t dummy_data = 8;
+        // dummy_ctx->lba = 0;
+        // dummy_ctx->op = 1; // Write first
+        // dummy_ctx->req_data = &dummy_data;
         // dummy_ctx->rc;
         // dummy_ctx->resp_data;
 	
+        printf("\nLOGGING: SPDK ZMalloc\n");
+        int sector_sz = spdk_nvme_ns_get_sector_size(selected_ns);
+        cb_args.buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
+                                   SPDK_ENV_SOCKET_ID_ANY, SPDK_MALLOC_DMA);
+
+        if (!cb_args.buf) {
+                fprintf(stderr, "Failed to allocate buffer\n");
+                exit(1);
+        }
+
 	/* The main event loop. */
-	while (1)  {
+	while (1) {
                 //TODO: Remove test block
-                // ctx = recv_req_from_client();
                 printf("\nLOGGING: Process context\n");
-                ctx = dummy_ctx;
+                bufs[0] = rte_pktmbuf_alloc(mbuf_pool);
+                ctx = recv_req_from_client();
+                // ctx = dummy_ctx;
                 if (ctx) {
                         if (ctx->op == READ) {
                                 handle_read_req(ctx);
@@ -404,11 +440,12 @@ static void main_loop(void) {
                 spdk_process_completions();
 
                 //TODO: Remove test block
-                if (ctx->op == READ) {
-                        ctx->op = WRITE;
-                } else {
-                        ctx->op = READ;
-                }
+                // if (ctx->op == READ) {
+                //         ctx->op = WRITE;
+                // } else {
+                //         ctx->op = READ;
+                // }
+                rte_pktmbuf_free(bufs[0]);
                 sleep(3);
 	}
 }
@@ -456,28 +493,12 @@ static void attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 }
 
 //LAB 2
-static struct rte_mempool* dpdk_init(void) {
+static void dpdk_init(void) {
         printf("\nLOGGING: DPDK Initialization\n");
 
-        struct rte_mempool *mbuf_pool;
+        // struct rte_mempool *mbuf_pool;
 	unsigned nb_ports;
 	uint16_t portid;
-
-	/* Initializion the Environment Abstraction Layer (EAL). 8< */
-        //TODO: figure out what arguments to pass in
-        // int argc = 4;
-        // char *argv[4];
-        // argv[0] = "-l";
-        // argv[1] = "1";
-        // argv[2] = "-n";
-        // argv[3] = "4";
-	// int ret = rte_eal_init(argc, argv);
-	// if (ret < 0)
-	// 	rte_exit(EXIT_FAILURE, "Error with EAL initialization\n");
-	/* >8 End of initialization the Environment Abstraction Layer (EAL). */
-
-	// argc -= ret;
-	// argv += ret;
 
 	/* Check that there is an even number of ports to send/receive on. */
         //TODO - FIGURE OUT: is this needed or can we set to only 1 num_mbufs
