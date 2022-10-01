@@ -289,7 +289,7 @@ static void recv_req_from_client(struct req_context *ctx) {
         ctx->op = req_pkt->op;
         printf("\nLOGGING: Populating Context Values [data=%hhu]\n", req_pkt->req_data[0]);
         ctx->req_data = malloc(sizeof(req_pkt->req_data));
-        memccpy(ctx->req_data, req_pkt->req_data, 1);
+        memcpy(ctx->req_data, req_pkt->req_data, 1);
         printf("\nLOGGING: Received Context Information [op=%d, lba=%lu, req_data=%hhu]\n", req_pkt->op, req_pkt->lba, *(req_pkt->req_data));
 }
 
