@@ -234,8 +234,8 @@ static void spdk_process_completions() {
  */
 static void handle_read_req(struct req_context *ctx) {
 	/* PUT YOUR CODE HERE */
-        if (ctx->op != READ || ctx->req_data* != 8) {
-                fprintf(stderr, "Dummy context improperly set up [ctx_op=%d, ctx_data=%d]\n", rc, ctx->req_data);
+        if (ctx->op != READ || *(ctx->req_data) != 8) {
+                fprintf(stderr, "Dummy context improperly set up [ctx_op=%d, ctx_data=%d]\n", rc, *(ctx->req_data));
                 exit(1);
         }
 
@@ -277,8 +277,8 @@ static void handle_read_req(struct req_context *ctx) {
  */
 static void handle_write_req(struct req_context *ctx) {
 	/* PUT YOUR CODE HERE */
-        if (ctx->op != WRITE || ctx->req_data* != 8) {
-                fprintf(stderr, "Dummy context improperly set up [ctx_op=%d, ctx_data=%d]\n", ctx->op, ctx->req_data);
+        if (ctx->op != WRITE || *(ctx->req_data) != 8) {
+                fprintf(stderr, "Dummy context improperly set up [ctx_op=%d, ctx_data=%d]\n", rc, *(ctx->req_data));
                 exit(1);
         }
 
