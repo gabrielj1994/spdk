@@ -259,11 +259,11 @@ static void handle_read_req(struct req_context *ctx) {
         /* Now submit a cmd to read data from the 1st sector. */
         rc = spdk_nvme_ns_cmd_read(
             selected_ns, qpair,
-            cb_args->buf,  /* The buffer to store the read data */
+            cb_args.buf,  /* The buffer to store the read data */
             0,             /* Starting LBA to read the data */
             1,             /* Length in sectors */
             read_complete, /* Callback to invoke when the read is done. */
-            cb_args,       /* Argument to pass to the callback. */
+            &cb_args,       /* Argument to pass to the callback. */
 	    0);
         if (rc != 0) {
                 fprintf(stderr, "Failed to submit read cmd\n");
@@ -277,8 +277,8 @@ static void handle_read_req(struct req_context *ctx) {
  */
 static void handle_write_req(struct req_context *ctx) {
 	/* PUT YOUR CODE HERE */
-        if (ctx->op != WRITE || ctx->req_data != 8) {
-                fprintf(stderr, "Dummy context improperly set up [ctx_op=%d, ctx_data=%d]\n", rc, ctx->req_data);
+        if (ctx->op != WRITE || ctx->req_data* != 8) {
+                fprintf(stderr, "Dummy context improperly set up [ctx_op=%d, ctx_data=%d]\n", ctx->op, ctx->req_data);
                 exit(1);
         }
 
