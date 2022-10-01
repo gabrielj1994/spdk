@@ -275,6 +275,17 @@ static void recv_req_from_client(struct req_context *ctx) {
 
         printf("\nLOGGING: Received RX Burst\n");
 
+        // TODO: Remove sanity check
+        char *prtp = (char *)bufs[0];
+        uint16_t counter = 0;
+        while (counter < 30) {
+        	printf("%02hhx ", *prtp);
+        	++counter;
+        	if (counter % 4 == 0)
+        		printf("\n");
+        	++prtp;
+        }
+
         // struct rte_ether_hdr *ether_hdr;
         // struct rte_ether_addr ether_src;
         struct request_packet *req_pkt;
@@ -283,9 +294,9 @@ static void recv_req_from_client(struct req_context *ctx) {
         ctx->ether_hdr = rte_pktmbuf_mtod_offset(bufs[0], struct rte_ether_hdr *, 0);
         printf("\nLOGGING: Retrieving Request Information\n");
         req_pkt = rte_pktmbuf_mtod_offset(bufs[0], struct request_packet *, sizeof(struct rte_ether_hdr));
-        printf("\nLOGGING: Populating Context Values [lba]\n");
+        printf("\nLOGGING: Populating Context Values [lba=%lu]\n", req_pkt->lba);
         ctx->lba = req_pkt->lba;
-        printf("\nLOGGING: Populating Context Values [op]\n");
+        printf("\nLOGGING: Populating Context Values [op=%d]\n", req_pkt->op);
         ctx->op = req_pkt->op;
         printf("\nLOGGING: Populating Context Values [data=%hhu]\n", req_pkt->req_data[0]);
         ctx->req_data = malloc(sizeof(req_pkt->req_data));
