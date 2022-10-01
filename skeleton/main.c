@@ -276,18 +276,18 @@ static void recv_req_from_client(struct req_context *ctx) {
         printf("\nLOGGING: Received RX Burst\n");
 
         // TODO: Remove sanity check
-        char *data;
+        // char *data;
 
-        data = rte_pktmbuf_mtod(bufs[0], char*);
-        char *prtp = (char *)data;
-        uint16_t counter = 0;
-        while (counter < 30) {
-        	printf("%02hhx ", *prtp);
-        	++counter;
-        	if (counter % 4 == 0)
-        		printf("\n");
-        	++prtp;
-        }
+        // data = rte_pktmbuf_mtod(bufs[0], char*);
+        // char *prtp = (char *)data;
+        // uint16_t counter = 0;
+        // while (counter < 30) {
+        // 	printf("%02hhx ", *prtp);
+        // 	++counter;
+        // 	if (counter % 4 == 0)
+        // 		printf("\n");
+        // 	++prtp;
+        // }
         /*
         received:
         40 50 68 0a 
