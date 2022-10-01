@@ -456,7 +456,7 @@ static void attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 }
 
 //LAB 2
-static void dpdk_init(void) {
+static struct rte_mempool* dpdk_init(void) {
         printf("\nLOGGING: DPDK Initialization\n");
 
         struct rte_mempool *mbuf_pool;
@@ -511,6 +511,8 @@ static void dpdk_init(void) {
 
 	if (rte_lcore_count() > 1)
 		printf("\nWARNING: Too many lcores enabled. Only 1 used.\n");
+
+        return mbuf_pool;
 }
 
 static void cleanup(void) {

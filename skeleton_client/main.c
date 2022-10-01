@@ -289,8 +289,8 @@ static void send_request_to_server(struct rte_mempool *mbuf_pool, struct req_con
         printf("\nLOGGING: Generating Request Packet\n");
         unsigned long eth_hdr_size = (sizeof(spdk_request)/sizeof(spdk_request[0]));
         unsigned long ctx_size = sizeof(ctx);
-        unsigned long request_size = eth_hdr_size+ctx_size;
-        char *request = malloc(request_size);
+        unsigned long packet_size = eth_hdr_size+ctx_size;
+        char *request = malloc(packet_size);
         printf("\nLOGGING: Packet Size Information [eth_hdr=%lu, ctx_size=%lu]\n", eth_hdr_size, ctx_size);
 
         memcpy(request, spdk_request, eth_hdr_size);
@@ -298,10 +298,10 @@ static void send_request_to_server(struct rte_mempool *mbuf_pool, struct req_con
 
 
         // Copy hard-coded request
-        memcpy(data, request, request_size);
+        memcpy(data, request, packet_size);
         struct rte_mbuf *mbuf = bufs[0];
-        mbuf->data_len = request_size;
-        mbuf->pkt_len = request_size;
+        mbuf->data_len = packet_size;
+        mbuf->pkt_len = packet_size;
         
         /* Send request through TX packets. */
         const uint16_t nb_tx = rte_eth_tx_burst(LAB2_PORT_ID, 0,
@@ -428,7 +428,7 @@ static void handle_write_req(struct req_context *ctx) {
 /*
  * The main application logic.
  */
-static void main_loop(void) {
+static void main_loop(struct rte_mempool *mbuf_pool) {
 	// struct req_context *ctx;
 	struct req_context *dummy_ctx = malloc(sizeof *dummy_ctx); ;
 
@@ -458,7 +458,7 @@ static void main_loop(void) {
                 //TODO: Remove test block
                 // ctx = recv_req_from_client();
                 printf("\nLOGGING: Process context\n");
-                send_request_to_server(dummy_ctx);
+                send_request_to_server(mbuf_pool, dummy_ctx);
                 // TODO: Receive response
 
                 //TODO: Remove test block
@@ -514,7 +514,7 @@ static void attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 }
 
 //LAB 2
-static void dpdk_init(void) {
+static struct rte_mempool* dpdk_init(void) {
         printf("\nLOGGING: DPDK Initialization\n");
 
         struct rte_mempool *mbuf_pool;
@@ -569,6 +569,8 @@ static void dpdk_init(void) {
 
 	if (rte_lcore_count() > 1)
 		printf("\nWARNING: Too many lcores enabled. Only 1 used.\n");
+        
+        return mbuf_pool;
 }
 
 static void cleanup(void) {
@@ -584,6 +586,7 @@ int main(int argc, char **argv) {
         int rc;
         struct spdk_env_opts opts;
         struct spdk_nvme_transport_id trid;
+        struct rte_mempool *mbuf_pool;
 
         /* Intialize SPDK's library environment. */
         spdk_env_opts_init(&opts);
@@ -623,9 +626,9 @@ int main(int argc, char **argv) {
         printf("SPDK initialization completes.\n");
 
 	/* PUT YOUR CODE HERE (DPDK initialization) */
-        dpdk_init();
+        mbuf_pool = dpdk_init();
 
-        main_loop();
+        main_loop(mbuf_pool);
 
 	/* PUT YOUR CODE HERE (DPDK cleanup) */
         cleanup();
