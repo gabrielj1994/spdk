@@ -38,6 +38,19 @@
 #include <spdk/string.h>
 #include <spdk/vmd.h>
 
+//LAB 2
+#include <stdint.h>
+#include <inttypes.h>
+#include <rte_eal.h>
+#include <rte_ethdev.h>
+#include <rte_cycles.h>
+#include <rte_lcore.h>
+#include <rte_mbuf.h>
+
+//LAB1
+#include <unistd.h>
+#include <time.h>
+
 #define RX_RING_SIZE 1024
 #define TX_RING_SIZE 1024
 
