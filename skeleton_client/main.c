@@ -279,6 +279,8 @@ static void send_request_to_server(struct req_context *ctx) {
         if (ctx->op == WRITE) {
                 printf("\nLOGGING: Preparing Write Request Data.\n");
                 req_pkt->req_data = ctx->req_data;
+                printf("\nLOGGING: Sanity check [req_data=%hhu]\n", req_pkt->req_data[0]);
+
         }
 
         // Combine hard-coded request with passed request context
@@ -310,6 +312,7 @@ static void send_request_to_server(struct req_context *ctx) {
         	++prtp;
         }
         /*
+        ==
         40 50 68 0a 
         00 20 00 00 
         40 50 c8 cb 
@@ -318,6 +321,26 @@ static void send_request_to_server(struct req_context *ctx) {
         01 00 ff ff 
         00 00 00 00 
         00 00
+        ==
+        00 47 68 0a 
+        00 20 00 00 
+        00 47 c8 c9 
+        1c 00 00 00 
+        80 00 01 00 
+        01 00 ff ff 
+        00 00 00 00 
+        00 00 00 00 
+        00 00 00 
+        ==
+        40 50 68 0a 
+        00 20 00 00 
+        40 50 c8 c9 
+        1c 00 00 00 
+        80 00 01 00 
+        01 00 ff ff 
+        00 00 00 00 
+        00 00 00 00 
+        00 00 00 
         */
         
         /*
