@@ -277,6 +277,7 @@ static void send_request_to_server(struct req_context *ctx) {
         req_pkt->lba=ctx->lba;
         req_pkt->op=ctx->op;
         if (ctx->op == WRITE) {
+                printf("\nLOGGING: Preparing Write Request Data.\n");
                 req_pkt->req_data = ctx->req_data;
         }
 
@@ -297,6 +298,36 @@ static void send_request_to_server(struct req_context *ctx) {
         struct rte_mbuf *mbuf = bufs[0];
         mbuf->data_len = packet_size;
         mbuf->pkt_len = packet_size;
+
+        // TODO: Remove sanity check
+        char *prtp = (char *)bufs[0];
+        uint16_t counter = 0;
+        while (counter < packet_size+8) {
+        	printf("%02hhx ", *prtp);
+        	++counter;
+        	if (counter % 4 == 0)
+        		printf("\n");
+        	++prtp;
+        }
+        
+        /*
+        // Capture a whole packet
+			// char *data;
+			// char *prtp = (char *)bufs[0];
+			// data =  rte_pktmbuf_mtod(bufs[0], char*);
+			// uint16_t pkt_len = rte_pktmbuf_pkt_len(bufs[0]);
+
+			// //print from bufs[0] to data
+			// printf("\nLOGGING: BUFS[0] to data\n");
+			// uint16_t counter = 0;
+			// while (prtp != data) {
+			// 	printf("%02hhx ", *prtp);
+			// 	++counter;
+			// 	if (counter % 4 == 0)
+			// 		printf("\n");
+			// 	++prtp;
+			// }
+        */
         
         /* Send request through TX packets. */
         const uint16_t nb_tx = rte_eth_tx_burst(LAB2_PORT_ID, 0,
@@ -444,6 +475,8 @@ static void main_loop(void) {
         dummy_ctx->op = 1; // Write first
         dummy_ctx->req_data = malloc(sizeof *dummy_ctx->req_data);
         dummy_ctx->req_data[0] = dummy_data;
+        printf("\nLOGGING: Sanity check [req_data=%hhu]\n", dummy_ctx->req_data[0]);
+
         // dummy_ctx->rc;
         // dummy_ctx->resp_data;
 	
@@ -476,11 +509,12 @@ static void main_loop(void) {
                         printf("\nLOGGING: SPDK Request timeout after 10 seconds\n");
                 }
 
-                if (dummy_ctx->op == READ) {
-                        dummy_ctx->op = WRITE;
-                } else {
-                        dummy_ctx->op = READ;
-                }
+                //TODO: uncomment
+                // if (dummy_ctx->op == READ) {
+                //         dummy_ctx->op = WRITE;
+                // } else {
+                //         dummy_ctx->op = READ;
+                // }
                 rte_pktmbuf_free(bufs[0]);
                 sleep(3);
 	}
