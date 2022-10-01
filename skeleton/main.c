@@ -281,7 +281,7 @@ static void recv_req_from_client(struct req_context *ctx) {
         // data = rte_pktmbuf_mtod(bufs[0], char*);
         char *prtp = rte_pktmbuf_mtod(bufs[0], char*);
         uint16_t counter = 0;
-        while (counter < 30) {
+        while (counter < 34) {
         	printf("%02hhx ", *prtp);
         	++counter;
         	if (counter % 4 == 0)
@@ -408,12 +408,13 @@ static void handle_write_req(struct req_context *ctx) {
         cb_args.done = false;
 
         /* Write the string into the buffer.  */
-        snprintf(cb_args.buf, sector_sz, "%s", "Hello world!\n");
+        // snprintf(cb_args.buf, sector_sz, "%s", "Hello world!\n");
+        memcpy(&cb_args.buf, ctx->req_data, 8);
 
         /* Submit a cmd to write data into the 1st sector. */
         rc = spdk_nvme_ns_cmd_write(
             selected_ns, qpair,
-	    ctx->req_data,    /* The data to write */
+	    cb_args.buf,    /* The data to write */
             0,              /* Starting LBA to write the data */
             1,              /* Length in sectors */
             write_complete, /* Callback to invoke when the write is done. */
