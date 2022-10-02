@@ -338,6 +338,9 @@ static void handle_read_req(struct callback_args cb_args, struct req_context *ct
         }
         cb_args.done = false;
         cb_args.req_ctx = ctx;
+        printf("\nLOGGING: Segfault hunting. handle write.\n");
+        cb_args.req_ctx->is_success = true;
+        printf("\nLOGGING: Segfault hunting. is_success assigned.\n");
 
         /* Now submit a cmd to read data from the 1st sector. */
         rc = spdk_nvme_ns_cmd_read(
@@ -390,6 +393,11 @@ static void handle_write_req(struct callback_args cb_args, struct req_context *c
         // snprintf(cb_args.buf, sector_sz, "%s", "Hello world!\n");
         memcpy(cb_args.buf, ctx->req_data, sizeof(ctx->req_data)/sizeof(ctx->req_data[0]));
         cb_args.req_ctx = ctx;
+        printf("\nLOGGING: Segfault hunting. handle write.\n");
+        cb_args.req_ctx->is_success = true;
+        printf("\nLOGGING: Segfault hunting. is_success assigned.\n");
+
+        
 
         /* Submit a cmd to write data into the 1st sector. */
         rc = spdk_nvme_ns_cmd_write(
