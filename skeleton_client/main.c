@@ -292,15 +292,17 @@ static void main_loop(void) {
         uint64_t request_counter = 0;
         uint64_t ack_counter = 0;
 
-        begin = rte_rdtsc_precise(); 
-        elapsed_cycles = 0;
-        microseconds = 0;
+        // begin = rte_rdtsc_precise(); 
+        // elapsed_cycles = 0;
+        // microseconds = 0;
         bool is_initializing = true;
 	while (1)  {
                 //TODO: Remove test block
                 // printf("\nLOGGING: Process context\n");
                 bufs[0] = rte_pktmbuf_alloc(mbuf_pool);
                 send_request_to_server(dummy_ctx);
+                begin = rte_rdtsc_precise();
+                microseconds = 0;
                 request_counter++;
                 // Receive response
                         
@@ -327,8 +329,6 @@ static void main_loop(void) {
                         printf("\nLOGGING: SPDK Request timeout after 10 seconds\n");
                 }
                 sleep(1);
-                begin = rte_rdtsc_precise();
-                microseconds = 0;
 
                 // Throughput Test Configuration
                 // const uint16_t nb_rx = rte_eth_rx_burst(LAB2_PORT_ID, 0,
