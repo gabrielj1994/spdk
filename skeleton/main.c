@@ -208,7 +208,7 @@ port_init(uint16_t port, struct rte_mempool *mbuf_pool) {
  * Send the response back to the client using DPDK.
  *
  */
-static void send_resp_to_client(struct rte_mbuf *bufs[], struct req_context *req_ctxs[], struct callback_args cb_args[]) {
+static void send_resp_to_client(struct rte_mbuf *bufs[], struct req_context *req_ctxs[], struct callback_args *cb_args[]) {
 
         /* PUT YOUR CODE HERE */
         printf("\nLOGGING: Send Response to Client\n");
@@ -232,9 +232,9 @@ static void send_resp_to_client(struct rte_mbuf *bufs[], struct req_context *req
                 unsigned long data_size = 0;
 
                 // Copy response data into read
-                if (req_ctxs[i]->op == READ && sizeof(cb_args[i].buf[0]) != 0) {
+                if (req_ctxs[i]->op == READ && sizeof(cb_args[i]->buf[0]) != 0) {
                         printf("\nLOGGING: Hunting Floating Point Error [READ Data Size]\n");
-                        data_size += sizeof(cb_args[i].buf)/sizeof(cb_args[i].buf[0]);
+                        data_size += sizeof(cb_args[i]->buf)/sizeof(cb_args[i]->buf[0]);
                 }
                 printf("\nLOGGING: Packet Size Information [eth_hdr=%lu, state_size=%lu, data_size=%lu]\n", eth_hdr_size, state_size, data_size);
                 char *data;
@@ -243,7 +243,7 @@ static void send_resp_to_client(struct rte_mbuf *bufs[], struct req_context *req
                 memcpy(&data[eth_hdr_size], &req_ctxs[i]->is_success, state_size);                
                 memcpy(&data[eth_hdr_size+state_size], req_ctxs[i]->req_data, data_size);
                 pkt_count = i+1;
-                spdk_free(cb_args[1].buf);
+                spdk_free(cb_args[i]->buf);
         }     
 
         printf("\nLOGGING: Send Packet Response\n");
@@ -313,13 +313,13 @@ static void spdk_process_completions() {
 /*
  * Process the read request using SPDK.
  */
-static void handle_read_req(struct callback_args cb_args, struct req_context *ctx) {
+static void handle_read_req(struct callback_args *cb_args, struct req_context *ctx) {
 	/* PUT YOUR CODE HERE */
         printf("\nLOGGING: Process Read Request\n");
         if (ctx->op != READ) {
                 fprintf(stderr, "Invalid context for read operation [ctx_op=%d, ctx_data=%d]\n", ctx->op, *(ctx->req_data));
                 ctx->is_success = false;
-                cb_args.done = true;
+                cb_args->done = true;
                 return;
         }
 
@@ -335,31 +335,31 @@ static void handle_read_req(struct callback_args cb_args, struct req_context *ct
         // cb_args.buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
         //                            SPDK_ENV_SOCKET_ID_ANY, SPDK_MALLOC_DMA);
 
-        if (!cb_args.buf) {
+        if (!cb_args->buf) {
                 fprintf(stderr, "Failed to allocate buffer\n");
                 ctx->is_success = false;
-                cb_args.done = true;
+                cb_args->done = true;
                 return;
         }
-        cb_args.done = false;
-        cb_args.req_ctx = ctx;
+        cb_args->done = false;
+        cb_args->req_ctx = ctx;
         printf("\nLOGGING: Segfault hunting. handle write.\n");
-        cb_args.req_ctx->is_success = true;
+        cb_args->req_ctx->is_success = true;
         printf("\nLOGGING: Segfault hunting. is_success assigned.\n");
 
         /* Now submit a cmd to read data from the 1st sector. */
         rc = spdk_nvme_ns_cmd_read(
             selected_ns, qpair,
-            cb_args.buf,  /* The buffer to store the read data */
+            cb_args->buf,  /* The buffer to store the read data */
             ctx->lba,             /* Starting LBA to read the data */
             1,             /* Length in sectors */
             read_complete, /* Callback to invoke when the read is done. */
-            &cb_args,       /* Argument to pass to the callback. */
+            cb_args,       /* Argument to pass to the callback. */
 	    0);
         if (rc != 0) {
                 fprintf(stderr, "Failed to submit read cmd\n");
                 ctx->is_success = false;
-                cb_args.done = true;
+                cb_args->done = true;
                 return;
         }
 
@@ -368,13 +368,13 @@ static void handle_read_req(struct callback_args cb_args, struct req_context *ct
 /*
  * Process the write request using SPDK.
  */
-static void handle_write_req(struct callback_args cb_args, struct req_context *ctx) {
+static void handle_write_req(struct callback_args *cb_args, struct req_context *ctx) {
 	/* PUT YOUR CODE HERE */
         printf("\nLOGGING: Process Write Request\n");
         if (ctx->op != WRITE) {
                 fprintf(stderr, "Invalid context op value for write operation [ctx_op=%d]\n", ctx->op);
                 ctx->is_success = false;
-                cb_args.done = true;
+                cb_args->done = true;
                 return;
         }
 
@@ -394,14 +394,14 @@ static void handle_write_req(struct callback_args cb_args, struct req_context *c
         //         fprintf(stderr, "Failed to allocate buffer\n");
         //         return;
         // }
-        cb_args.done = false;
+        cb_args->done = false;
 
         /* Write the string into the buffer.  */
         // snprintf(cb_args.buf, sector_sz, "%s", "Hello world!\n");
-        memcpy(cb_args.buf, ctx->req_data, sizeof(ctx->req_data)/sizeof(ctx->req_data[0]));
-        cb_args.req_ctx = ctx;
+        memcpy(cb_args->buf, ctx->req_data, sizeof(ctx->req_data)/sizeof(ctx->req_data[0]));
+        cb_args->req_ctx = ctx;
         printf("\nLOGGING: Segfault hunting. handle write.\n");
-        cb_args.req_ctx->is_success = true;
+        cb_args->req_ctx->is_success = true;
         printf("\nLOGGING: Segfault hunting. is_success assigned.\n");
 
         
@@ -409,25 +409,25 @@ static void handle_write_req(struct callback_args cb_args, struct req_context *c
         /* Submit a cmd to write data into the 1st sector. */
         rc = spdk_nvme_ns_cmd_write(
             selected_ns, qpair,
-	    cb_args.buf,    /* The data to write */
+	    cb_args->buf,    /* The data to write */
             ctx->lba,              /* Starting LBA to write the data */
             1,              /* Length in sectors */
             write_complete, /* Callback to invoke when the write is done. */
-            &cb_args,       /* Argument to pass to the callback. */
+            cb_args,       /* Argument to pass to the callback. */
             0);
         if (rc != 0) {
                 fprintf(stderr, "Failed to submit write cmd [error_code=%d]\n", rc);
                 ctx->is_success = false;
-                cb_args.done = true;
+                cb_args->done = true;
                 return;
         }
 }
 
-bool requests_unfinished(struct callback_args cb_args[]) {
+bool requests_unfinished(struct callback_args *cb_args[]) {
         printf("\nLOGGING: Checking for Unfinished Requests\n");
 
         for (int i = 0; i < BURST_SIZE; i++) {
-                if (!cb_args[i].done && cb_args[i].req_ctx->is_valid) {
+                if (!cb_args[i]->done && cb_args[i]->req_ctx->is_valid) {
                         return false;
                 }
         }
@@ -442,7 +442,7 @@ bool requests_unfinished(struct callback_args cb_args[]) {
  * 
  * Should populate the passed pointers with the relevant data.
  */
-static void recv_req_from_client(struct rte_mbuf *bufs[], struct req_context *req_ctxs[], struct callback_args cb_args[]) {
+static void recv_req_from_client(struct rte_mbuf *bufs[], struct req_context *req_ctxs[], struct callback_args *cb_args[]) {
 	/* PUT YOUR CODE HERE */
         printf("\nLOGGING: Receive Request from Client\n");
 	// struct req_context *ctx = malloc(sizeof *ctx);
@@ -520,8 +520,8 @@ struct callback_args cb_args[BURST_SIZE];
 
                         printf("\nLOGGING: SPDK ZMalloc\n");
                         sector_sz = spdk_nvme_ns_get_sector_size(selected_ns);
-                        &cb_args[pkt_counter] = malloc(sizeof(struct callback_args));
-                        cb_args[pkt_counter].buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
+                        cb_args[pkt_counter] = malloc(sizeof(*cb_args[pkt_counter]));
+                        cb_args[pkt_counter]->buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
                                                 SPDK_ENV_SOCKET_ID_ANY, SPDK_MALLOC_DMA);
                         ctx->packet_num = pkt_counter;
                         ctx->is_valid = true;
@@ -596,7 +596,7 @@ static void main_loop(void) {
 
 	/* The main event loop. */
 	while (1) {
-                struct callback_args cb_args[BURST_SIZE];
+                struct callback_args *cb_args[BURST_SIZE];
                 struct rte_mbuf *bufs[BURST_SIZE];
                 struct req_context *req_ctxs[BURST_SIZE];
                 allocate_contexts(req_ctxs);
