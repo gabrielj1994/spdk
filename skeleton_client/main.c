@@ -605,7 +605,7 @@ static void main_loop(void) {
                                 continue;
                         }
                         ack_counter++;
-                        if (ack_counter >= 1000) {
+                        if (ack_counter >= 10000) {
                                 elapsed_cycles = rte_rdtsc_precise() - begin; 
                                 microseconds = elapsed_cycles * 1000000 / hz;
                                 printf("\nLOGGING: SPDK Throughput Window Metrics [request_count=%lu, response_count=%lu, time=%" PRIu64 " microseconds]\n", request_counter, ack_counter, microseconds);
