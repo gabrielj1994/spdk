@@ -232,7 +232,8 @@ static void send_resp_to_client(struct rte_mbuf *bufs[], struct req_context *req
                 unsigned long data_size = 0;
 
                 // Copy response data into read
-                if (req_ctxs[i]->op == READ) {
+                if (req_ctxs[i]->op == READ && sizeof(cb_args[i].buf[0]) != 0) {
+                        printf("\nLOGGING: Hunting Floating Point Error [READ Data Size]\n");
                         data_size += sizeof(cb_args[i].buf)/sizeof(cb_args[i].buf[0]);
                 }
                 printf("\nLOGGING: Packet Size Information [eth_hdr=%lu, state_size=%lu, data_size=%lu]\n", eth_hdr_size, state_size, data_size);
@@ -244,7 +245,8 @@ static void send_resp_to_client(struct rte_mbuf *bufs[], struct req_context *req
                 pkt_count = i+1;
                 spdk_free(cb_args[1].buf);
         }     
-               
+
+        printf("\nLOGGING: Send Packet Response\n");
         rte_eth_tx_burst(LAB2_PORT_ID, 0, bufs, pkt_count);
         elapsed_cycles = rte_rdtsc_precise() - begin; 
         microseconds = elapsed_cycles * 1000000 / hz;
