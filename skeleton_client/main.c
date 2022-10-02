@@ -614,7 +614,6 @@ static void main_loop(void) {
                                 ack_counter = 0;
                                 begin = rte_rdtsc_precise();
                         }
-                        break;
                 }
                 rte_pktmbuf_free(bufs[0]);
                 // sleep(3);
