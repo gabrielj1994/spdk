@@ -326,6 +326,8 @@ static void main_loop(void) {
                 } else {
                         printf("\nLOGGING: SPDK Request timeout after 10 seconds\n");
                 }
+                begin = rte_rdtsc_precise();
+                microseconds = 0;
                 sleep(1);
 
                 // Throughput Test Configuration
