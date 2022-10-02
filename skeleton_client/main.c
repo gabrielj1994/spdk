@@ -325,6 +325,7 @@ static void main_loop(void) {
                 //         printf("\nLOGGING: SPDK Request timeout after 10 seconds\n");
                 // }
 
+                bool is_initializing = true;
                 const uint16_t nb_rx = rte_eth_rx_burst(LAB2_PORT_ID, 0,
                 bufs, BURST_SIZE);
                 if (nb_rx != 0) {
@@ -349,9 +350,12 @@ static void main_loop(void) {
                         }
                 }
                 rte_pktmbuf_free(bufs[0]);
-                if (ack_counter < 10) {
-                        sleep(5);
-                } else if (ack_counter == 10) {
+                if (is_initializing && ack_counter < 5) {
+                        sleep(2);
+                } else if (ack_counter == 5) {
+                        is_initializing = false;
+                        elapsed_cycles = rte_rdtsc_precise() - begin; 
+                        microseconds = elapsed_cycles * 1000000 / hz;
                         printf("\nLOGGING: SPDK Throughput Window Metrics [response_count=%lu, time=%" PRIu64 " microseconds]\n", ack_counter, microseconds);
                         microseconds = 0;
                         request_counter = 0;
