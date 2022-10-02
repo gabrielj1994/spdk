@@ -270,8 +270,10 @@ static void write_complete(void *args, const struct spdk_nvme_cpl *completion) {
                         spdk_nvme_cpl_get_status_string(&completion->status));
                 fprintf(stderr, "Failed to write, aborting run\n");
                 args_ptr->req_ctx->is_success = false;
+                args_ptr->done = true;
         }
         printf("\nLOGGING: Segfault hunting. After completion check.\n");
+        args_ptr->done = true;
         args_ptr->req_ctx->is_success = true;
         printf("\nLOGGING: Segfault hunting. After is_success check.\n");
         // send_resp_to_client(args_ptr);
@@ -289,6 +291,7 @@ static void read_complete(void *args, const struct spdk_nvme_cpl *completion) {
                         spdk_nvme_cpl_get_status_string(&completion->status));
                 fprintf(stderr, "Failed to read, aborting run\n");
                 args_ptr->req_ctx->is_success = false;
+                args_ptr->done = true;
         }
 
         /* Unblock the while loop in main_loop(). */
@@ -316,6 +319,7 @@ static void handle_read_req(struct callback_args cb_args, struct req_context *ct
         if (ctx->op != READ) {
                 fprintf(stderr, "Invalid context for read operation [ctx_op=%d, ctx_data=%d]\n", ctx->op, *(ctx->req_data));
                 ctx->is_success = false;
+                cb_args.done = true;
                 return;
         }
 
@@ -334,6 +338,7 @@ static void handle_read_req(struct callback_args cb_args, struct req_context *ct
         if (!cb_args.buf) {
                 fprintf(stderr, "Failed to allocate buffer\n");
                 ctx->is_success = false;
+                cb_args.done = true;
                 return;
         }
         cb_args.done = false;
@@ -354,6 +359,7 @@ static void handle_read_req(struct callback_args cb_args, struct req_context *ct
         if (rc != 0) {
                 fprintf(stderr, "Failed to submit read cmd\n");
                 ctx->is_success = false;
+                cb_args.done = true;
                 return;
         }
 
@@ -368,6 +374,7 @@ static void handle_write_req(struct callback_args cb_args, struct req_context *c
         if (ctx->op != WRITE) {
                 fprintf(stderr, "Invalid context op value for write operation [ctx_op=%d]\n", ctx->op);
                 ctx->is_success = false;
+                cb_args.done = true;
                 return;
         }
 
@@ -411,9 +418,20 @@ static void handle_write_req(struct callback_args cb_args, struct req_context *c
         if (rc != 0) {
                 fprintf(stderr, "Failed to submit write cmd [error_code=%d]\n", rc);
                 ctx->is_success = false;
+                cb_args.done = true;
                 return;
         }
 }
+
+bool requests_unfinished(struct callback_args cb_args[]) {
+        for (int i = 0; i < BURST_SIZE; i++) {
+                if (!cb_args[i].done && cb_args[i].req_ctx->is_valid) {
+                        return false;
+                }
+        }
+        return true;
+}
+
 
 /*
  * Try to receive a storage request from the client using DPDK.
@@ -512,9 +530,15 @@ struct callback_args cb_args[BURST_SIZE];
                                         handle_write_req(cb_args[ctx->packet_num], ctx);
                                 }
                         }
+                        spdk_process_completions();
                 }
 
-                spdk_process_completions();
+                // Stall here until all ops are marked done
+                // Requests must be processed before state is reset
+                while (requests_unfinished(cb_args)) {
+                        printf("\nLOGGING: Ensuring Requests are Completed\n");
+                        spdk_process_completions();
+                }
                 send_resp_to_client(bufs, req_ctxs, cb_args);
         }
 }
