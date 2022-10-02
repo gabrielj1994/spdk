@@ -333,7 +333,7 @@ static void recv_req_from_client(struct req_context *ctx) {
                 }
                 printf("\nLOGGING: Populating Context Values [data]\n");
                 if (ctx->op == WRITE) {
-                        unsigned long data_size = sizeof(req_pkt->req_data)/sizeof(req_pkt->req_data[0]);
+                        unsigned long data_size = sizeof(&data[sizeof(ctx->lba)+sizeof(ctx->op)])/sizeof(data[sizeof(ctx->lba)+sizeof(ctx->op)]);
                         ctx->req_data = malloc(data_size);
                         memcpy(ctx->req_data, &data[sizeof(ctx->lba)+sizeof(ctx->op)], data_size);
                 }
