@@ -236,7 +236,8 @@ static void write_complete(void *args, const struct spdk_nvme_cpl *completion) {
         printf("\nLOGGING: Write complete.\n");
         int rc;
         struct callback_args *args_ptr = args;
-        
+
+        printf("\nLOGGING: Segfault hunting. Before completion check.\n");
         /* Check if there's an error for the write request. */
         if (spdk_nvme_cpl_is_error(completion)) {
                 spdk_nvme_qpair_print_completion(
@@ -246,7 +247,9 @@ static void write_complete(void *args, const struct spdk_nvme_cpl *completion) {
                 fprintf(stderr, "Failed to write, aborting run\n");
                 args_ptr->req_ctx->is_success = false;
         }
+        printf("\nLOGGING: Segfault hunting. After completion check.\n");
         args_ptr->req_ctx->is_success = true;
+        printf("\nLOGGING: Segfault hunting. After is_success check.\n");
         send_resp_to_client(args_ptr);
 }
 
