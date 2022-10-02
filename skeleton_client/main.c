@@ -616,6 +616,14 @@ static void main_loop(void) {
                         }
                 }
                 rte_pktmbuf_free(bufs[0]);
+                if (ack_counter < 10) {
+                        sleep(5);
+                } else if (ack_counter == 10) {
+                        microseconds = 0;
+                        request_counter = 0;
+                        ack_counter = 0;
+                        begin = rte_rdtsc_precise();
+                }
                 // sleep(3);
 	}
 }
