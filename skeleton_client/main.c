@@ -352,7 +352,7 @@ static void main_loop(void) {
                 rte_pktmbuf_free(bufs[0]);
                 if (is_initializing && ack_counter < 5) {
                         sleep(2);
-                } else if (ack_counter == 5) {
+                } else if (is_initializing && ack_counter == 5) {
                         is_initializing = false;
                         elapsed_cycles = rte_rdtsc_precise() - begin; 
                         microseconds = elapsed_cycles * 1000000 / hz;
