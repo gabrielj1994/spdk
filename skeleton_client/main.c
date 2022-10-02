@@ -342,6 +342,10 @@ static void main_loop(void) {
                                 request_counter = 0;
                                 ack_counter = 0;
                                 begin = rte_rdtsc_precise();
+                        } else if (ack_counter % 500 == 0) {
+                                elapsed_cycles = rte_rdtsc_precise() - begin; 
+                                microseconds = elapsed_cycles * 1000000 / hz;
+                                printf("\nLOGGING: SPDK Throughput Window Metrics [request_count=%lu, response_count=%lu, time=%" PRIu64 " microseconds]\n", request_counter, ack_counter, microseconds);
                         }
                 }
                 rte_pktmbuf_free(bufs[0]);
