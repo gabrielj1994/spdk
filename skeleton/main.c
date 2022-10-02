@@ -520,7 +520,7 @@ struct callback_args cb_args[BURST_SIZE];
 
                         printf("\nLOGGING: SPDK ZMalloc\n");
                         sector_sz = spdk_nvme_ns_get_sector_size(selected_ns);
-                        cb_args[pkt_counter] = malloc(sizeof(cb_args[pkt_counter]));
+                        cb_args[pkt_counter] = malloc(sizeof(struct callback_args));
                         cb_args[pkt_counter].buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
                                                 SPDK_ENV_SOCKET_ID_ANY, SPDK_MALLOC_DMA);
                         ctx->packet_num = pkt_counter;
