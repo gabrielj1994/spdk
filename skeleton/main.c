@@ -220,7 +220,7 @@ static void send_resp_to_client(struct callback_args *args) {
 
         // Copy response data into read
         if (args->req_ctx->op == READ) {
-                data_size += sizeof(args->req_ctx->req_data/args->req_ctx->req_data[0]);
+                data_size += sizeof(args->req_ctx->req_data)/sizeof(args->req_ctx->req_data[0]);
         }
         printf("\nLOGGING: Packet Size Information [eth_hdr=%lu, state_size=%lu, data_size=%lu]\n", eth_hdr_size, state_size, data_size);
         char *data;
