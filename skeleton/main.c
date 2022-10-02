@@ -103,11 +103,11 @@ struct callback_args {
 };
 
 static struct spdk_nvme_qpair *qpair;
-static struct callback_args cb_args[];
+static struct callback_args cb_args[BURST_SIZE];
 
 struct rte_mempool *mbuf_pool;
-struct rte_mbuf *bufs[];
-struct req_context *req_ctxs[];
+struct rte_mbuf *bufs[BURST_SIZE];
+struct req_context *req_ctxs[BURST_SIZE];
 
 // Telemetry
 uint64_t hz;
