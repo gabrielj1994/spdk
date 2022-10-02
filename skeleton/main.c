@@ -432,6 +432,7 @@ static void handle_write_req(struct req_context *ctx) {
         /* Write the string into the buffer.  */
         // snprintf(cb_args.buf, sector_sz, "%s", "Hello world!\n");
         memcpy(cb_args.buf, ctx->req_data, sizeof(ctx->req_data)/sizeof(ctx->req_data[0]));
+        cb_args.req_ctx = ctx;
 
         /* Submit a cmd to write data into the 1st sector. */
         rc = spdk_nvme_ns_cmd_write(
