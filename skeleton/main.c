@@ -296,110 +296,6 @@ static void read_complete(void *args, const struct spdk_nvme_cpl *completion) {
         // send_resp_to_client(args_ptr);
 }
 
-/*
- * Try to receive a storage request from the client using DPDK.
- *
- * For the first step, use a mock implementation here to test main_loop().
- * 
- * Should populate the passed pointers with the relevant data.
- */
-static void recv_req_from_client() {
-	/* PUT YOUR CODE HERE */
-        printf("\nLOGGING: Receive Request from Client\n");
-	// struct req_context *ctx = malloc(sizeof *ctx);
-
-        // struct rte_mbuf *bufs[BURST_SIZE];
-        int sector_sz;
-        uint16_t nb_rx = 0;
-        
-        while (nb_rx == 0) {
-                nb_rx = rte_eth_rx_burst(LAB2_PORT_ID, 0,
-                        bufs, BURST_SIZE);
-                
-                if (nb_rx == 0) {
-                        continue;
-                }
-
-                uint16_t pkt_counter = 0;
-                while (pkt_counter < nb_rx) {
-                        printf("\nLOGGING: Received RX Burst\n");
-
-                        // TODO: Remove sanity check
-                        // char *data;
-
-                        // data = rte_pktmbuf_mtod(bufs[0], char*);
-                        // char *prtp = rte_pktmbuf_mtod(bufs[0], char*);
-                        // uint16_t counter = 0;
-                        // while (counter < 34) {
-                        //         printf("%02hhx ", *prtp);
-                        //         ++counter;
-                        //         if (counter % 4 == 0)
-                        //                 printf("\n");
-                        //         ++prtp;
-                        // }
-
-                        // struct rte_ether_hdr *ether_hdr;
-                        // struct rte_ether_addr ether_src;
-                        // struct request_packet *req_pkt = malloc(sizeof(*req_pkt));
-                        
-
-                        printf("\nLOGGING: Retrieving Header Information\n");
-                        struct req_context *ctx = req_ctxs[pkt_counter];
-                        ctx->ether_hdr = rte_pktmbuf_mtod_offset(bufs[pkt_counter], struct rte_ether_hdr *, 0);
-                        // Arbitrarily Chose RTE_ETHER_TYPE_ARP to define our request packets
-                        if (ctx->ether_hdr->ether_type != rte_cpu_to_be_16(RTE_ETHER_TYPE_ARP)) {
-                                printf("\nLOGGING: Noise on Port. Dropping Packet\n");
-                                // nb_rx = 0;
-                                ctx->is_valid = false;
-                                continue;
-                        }
-                        printf("\nLOGGING: Retrieving Request Information\n");
-                        char *data = rte_pktmbuf_mtod_offset(bufs[pkt_counter], char *, sizeof(struct rte_ether_hdr));
-                        memcpy(&ctx->lba, data, sizeof(ctx->lba));
-                        printf("\nLOGGING: Populated Context Values [lba=%lu]\n", ctx->lba);
-                        memcpy(&ctx->op, &data[sizeof(ctx->lba)], sizeof(ctx->op));
-                        printf("\nLOGGING: Populated Context Values [op=%d]\n", ctx->op);
-                        if (ctx->op != WRITE && ctx->op != READ) {
-                                printf("\nLOGGING: Invalid OP Value. Dropping Packet\n");
-                                // nb_rx = 0;
-                                ctx->is_valid = false;
-                                continue;
-                        }
-                        printf("\nLOGGING: Populating Context Values [data]\n");
-                        if (ctx->op == WRITE) {
-                                unsigned long data_size = sizeof(&data[sizeof(ctx->lba)+sizeof(ctx->op)])/sizeof(data[sizeof(ctx->lba)+sizeof(ctx->op)]);
-                                ctx->req_data = malloc(data_size);
-                                memcpy(ctx->req_data, &data[sizeof(ctx->lba)+sizeof(ctx->op)], data_size);
-                        }
-
-                        printf("\nLOGGING: SPDK ZMalloc\n");
-                        sector_sz = spdk_nvme_ns_get_sector_size(selected_ns);
-                        cb_args[pkt_counter].buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
-                                                SPDK_ENV_SOCKET_ID_ANY, SPDK_MALLOC_DMA);
-                        ctx->packet_num = pkt_counter;
-                        ctx->is_valid = true;
-
-                        if (ctx) {
-                                // if (!is_timing) {
-                                //         is_timing = true;
-                                //         hz = rte_get_timer_hz(); 
-                                //         begin = rte_rdtsc_precise(); 
-                                // }
-
-                                if (ctx->op == READ) {
-                                        handle_read_req(ctx);
-                                } else {
-                                        handle_write_req(ctx);
-                                }
-                        }
-                        pkt_counter++;
-                }
-
-                spdk_process_completions();
-                send_resp_to_client();
-        }
-}
-
 /* 
  * Try to drain the completion queue and trigger callbacks.
  */
@@ -505,6 +401,110 @@ static void handle_write_req(struct req_context *ctx) {
                 fprintf(stderr, "Failed to submit write cmd [error_code=%d]\n", rc);
                 ctx->is_success = false;
                 return;
+        }
+}
+
+/*
+ * Try to receive a storage request from the client using DPDK.
+ *
+ * For the first step, use a mock implementation here to test main_loop().
+ * 
+ * Should populate the passed pointers with the relevant data.
+ */
+static void recv_req_from_client() {
+	/* PUT YOUR CODE HERE */
+        printf("\nLOGGING: Receive Request from Client\n");
+	// struct req_context *ctx = malloc(sizeof *ctx);
+
+        // struct rte_mbuf *bufs[BURST_SIZE];
+        int sector_sz;
+        uint16_t nb_rx = 0;
+        
+        while (nb_rx == 0) {
+                nb_rx = rte_eth_rx_burst(LAB2_PORT_ID, 0,
+                        bufs, BURST_SIZE);
+                
+                if (nb_rx == 0) {
+                        continue;
+                }
+
+                uint16_t pkt_counter = 0;
+                while (pkt_counter < nb_rx) {
+                        printf("\nLOGGING: Received RX Burst\n");
+
+                        // TODO: Remove sanity check
+                        // char *data;
+
+                        // data = rte_pktmbuf_mtod(bufs[0], char*);
+                        // char *prtp = rte_pktmbuf_mtod(bufs[0], char*);
+                        // uint16_t counter = 0;
+                        // while (counter < 34) {
+                        //         printf("%02hhx ", *prtp);
+                        //         ++counter;
+                        //         if (counter % 4 == 0)
+                        //                 printf("\n");
+                        //         ++prtp;
+                        // }
+
+                        // struct rte_ether_hdr *ether_hdr;
+                        // struct rte_ether_addr ether_src;
+                        // struct request_packet *req_pkt = malloc(sizeof(*req_pkt));
+                        
+
+                        printf("\nLOGGING: Retrieving Header Information\n");
+                        struct req_context *ctx = req_ctxs[pkt_counter];
+                        ctx->ether_hdr = rte_pktmbuf_mtod_offset(bufs[pkt_counter], struct rte_ether_hdr *, 0);
+                        // Arbitrarily Chose RTE_ETHER_TYPE_ARP to define our request packets
+                        if (ctx->ether_hdr->ether_type != rte_cpu_to_be_16(RTE_ETHER_TYPE_ARP)) {
+                                printf("\nLOGGING: Noise on Port. Dropping Packet\n");
+                                // nb_rx = 0;
+                                ctx->is_valid = false;
+                                continue;
+                        }
+                        printf("\nLOGGING: Retrieving Request Information\n");
+                        char *data = rte_pktmbuf_mtod_offset(bufs[pkt_counter], char *, sizeof(struct rte_ether_hdr));
+                        memcpy(&ctx->lba, data, sizeof(ctx->lba));
+                        printf("\nLOGGING: Populated Context Values [lba=%lu]\n", ctx->lba);
+                        memcpy(&ctx->op, &data[sizeof(ctx->lba)], sizeof(ctx->op));
+                        printf("\nLOGGING: Populated Context Values [op=%d]\n", ctx->op);
+                        if (ctx->op != WRITE && ctx->op != READ) {
+                                printf("\nLOGGING: Invalid OP Value. Dropping Packet\n");
+                                // nb_rx = 0;
+                                ctx->is_valid = false;
+                                continue;
+                        }
+                        printf("\nLOGGING: Populating Context Values [data]\n");
+                        if (ctx->op == WRITE) {
+                                unsigned long data_size = sizeof(&data[sizeof(ctx->lba)+sizeof(ctx->op)])/sizeof(data[sizeof(ctx->lba)+sizeof(ctx->op)]);
+                                ctx->req_data = malloc(data_size);
+                                memcpy(ctx->req_data, &data[sizeof(ctx->lba)+sizeof(ctx->op)], data_size);
+                        }
+
+                        printf("\nLOGGING: SPDK ZMalloc\n");
+                        sector_sz = spdk_nvme_ns_get_sector_size(selected_ns);
+                        cb_args[pkt_counter].buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
+                                                SPDK_ENV_SOCKET_ID_ANY, SPDK_MALLOC_DMA);
+                        ctx->packet_num = pkt_counter;
+                        ctx->is_valid = true;
+
+                        if (ctx) {
+                                // if (!is_timing) {
+                                //         is_timing = true;
+                                //         hz = rte_get_timer_hz(); 
+                                //         begin = rte_rdtsc_precise(); 
+                                // }
+
+                                if (ctx->op == READ) {
+                                        handle_read_req(ctx);
+                                } else {
+                                        handle_write_req(ctx);
+                                }
+                        }
+                        pkt_counter++;
+                }
+
+                spdk_process_completions();
+                send_resp_to_client();
         }
 }
 
