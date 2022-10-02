@@ -602,7 +602,7 @@ static void main_loop(void) {
                 struct callback_args *cb_args[BURST_SIZE];
                 struct rte_mbuf *bufs[BURST_SIZE];
                 struct req_context *req_ctxs[BURST_SIZE];
-                allocate_contexts(req_ctxs);
+                allocate_contexts(req_ctxs, cb_args);
                 //TODO: Remove test block
                 printf("\nLOGGING: Process context\n");
                 // cb_args.buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
