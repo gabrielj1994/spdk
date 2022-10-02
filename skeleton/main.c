@@ -437,6 +437,10 @@ struct callback_args cb_args[BURST_SIZE];
 
                 for (uint16_t pkt_counter = 0; pkt_counter < nb_rx; pkt_counter++ ) {
                         printf("\nLOGGING: Received RX Burst\n");
+                        if (!is_timing) {
+                                is_timing = true;
+                                begin = rte_rdtsc_precise(); 
+                        }
 
                         // TODO: Remove sanity check
                         // char *data;
@@ -494,12 +498,6 @@ struct callback_args cb_args[BURST_SIZE];
                         ctx->is_valid = true;
 
                         if (ctx) {
-                                // if (!is_timing) {
-                                //         is_timing = true;
-                                //         hz = rte_get_timer_hz(); 
-                                //         begin = rte_rdtsc_precise(); 
-                                // }
-
                                 if (ctx->op == READ) {
                                         handle_read_req(cb_args[ctx->packet_num], ctx);
                                 } else {
@@ -532,6 +530,7 @@ static void main_loop(void) {
         // uint64_t elapsed_cycles;
         // uint64_t microseconds; = 0;
         is_timing = false;
+        hz = rte_get_timer_hz();
 
 
 	/* PUT YOUR CODE HERE */
