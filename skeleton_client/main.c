@@ -560,46 +560,64 @@ static void main_loop(void) {
         uint64_t begin = rte_rdtsc_precise(); 
         uint64_t elapsed_cycles;
         uint64_t microseconds = 0;
+        uint64_t request_counter = 0;
+        uint64_t ack_counter = 0;
+
+        begin = rte_rdtsc_precise(); 
+        elapsed_cycles = 0;
+        microseconds = 0;        
 	while (1)  {
                 //TODO: Remove test block
-                // ctx = recv_req_from_client();
                 printf("\nLOGGING: Process context\n");
                 bufs[0] = rte_pktmbuf_alloc(mbuf_pool);
                 send_request_to_server(dummy_ctx);
+                request_counter++;
                 // Receive response
-                begin = rte_rdtsc_precise(); 
-                elapsed_cycles = 0;
-                microseconds = 0;                
-                while (microseconds < 10000000) {
+                        
+                // while (microseconds < 10000000) {
                         // 10 second time out
-                        const uint16_t nb_rx = rte_eth_rx_burst(LAB2_PORT_ID, 0,
-                        bufs, BURST_SIZE);
-                        elapsed_cycles = rte_rdtsc_precise() - begin; 
-                        microseconds = elapsed_cycles * 1000000 / hz;
-                        if (nb_rx != 0) {
-                                struct rte_ether_hdr *ether_hdr = rte_pktmbuf_mtod_offset(bufs[0], struct rte_ether_hdr *, 0);
-                                if (ether_hdr->ether_type != rte_cpu_to_be_16(RTE_ETHER_TYPE_ARP)) {
-                                        printf("\nLOGGING: Noise on Port. Dropping Packet\n");
-                                        continue;
-                                }
-                                break;
-                        } 
-                }
-
-                if (microseconds < 10000000) {
-                        printf("\nLOGGING: SPDK Request Executed [time=%" PRIu64 " microseconds]\n", microseconds);
-                } else {
-                        printf("\nLOGGING: SPDK Request timeout after 10 seconds\n");
-                }
-
-                //TODO: uncomment
-                // if (dummy_ctx->op == READ) {
-                //         dummy_ctx->op = WRITE;
-                // } else {
-                //         dummy_ctx->op = READ;
+                        // const uint16_t nb_rx = rte_eth_rx_burst(LAB2_PORT_ID, 0,
+                        // bufs, BURST_SIZE);
+                        // elapsed_cycles = rte_rdtsc_precise() - begin; 
+                        // microseconds = elapsed_cycles * 1000000 / hz;
+                        // if (nb_rx != 0) {
+                        //         struct rte_ether_hdr *ether_hdr = rte_pktmbuf_mtod_offset(bufs[0], struct rte_ether_hdr *, 0);
+                        //         if (ether_hdr->ether_type != rte_cpu_to_be_16(RTE_ETHER_TYPE_ARP)) {
+                        //                 printf("\nLOGGING: Noise on Port. Dropping Packet\n");
+                        //                 continue;
+                        //         }
+                        //         break;
+                        // } 
                 // }
+
+                // if (microseconds < 10000000) {
+                //         printf("\nLOGGING: SPDK Request Executed [time=%" PRIu64 " microseconds]\n", microseconds);
+                // } else {
+                //         printf("\nLOGGING: SPDK Request timeout after 10 seconds\n");
+                // }
+
+                const uint16_t nb_rx = rte_eth_rx_burst(LAB2_PORT_ID, 0,
+                bufs, BURST_SIZE);
+                if (nb_rx != 0) {
+                        struct rte_ether_hdr *ether_hdr = rte_pktmbuf_mtod_offset(bufs[0], struct rte_ether_hdr *, 0);
+                        if (ether_hdr->ether_type != rte_cpu_to_be_16(RTE_ETHER_TYPE_ARP)) {
+                                printf("\nLOGGING: Noise on Port. Dropping Packet\n");
+                                continue;
+                        }
+                        ack_counter++;
+                        if (ack_counter >= 10000) {
+                                elapsed_cycles = rte_rdtsc_precise() - begin; 
+                                microseconds = elapsed_cycles * 1000000 / hz;
+                                printf("\nLOGGING: SPDK Throughput Window Metrics [request_count=%lu, response_count=%lu, time=%" PRIu64 " microseconds]\n", request_counter, ack_counter, microseconds);
+                                microseconds = 0;
+                                request_counter = 0;
+                                ack_counter = 0;
+                                begin = rte_rdtsc_precise();
+                        }
+                        break;
+                }
                 rte_pktmbuf_free(bufs[0]);
-                sleep(3);
+                // sleep(3);
 	}
 }
 
