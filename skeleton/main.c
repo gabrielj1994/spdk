@@ -517,6 +517,7 @@ struct callback_args cb_args[BURST_SIZE];
 static void allocate_contexts(struct req_context *req_ctxs[]) {
         printf("\nLOGGING: Initializing contexts as invalid\n");
         for (int i = 0; i < BURST_SIZE; i++) {
+                req_ctxs[i] = malloc(sizeof(*req_ctxs[i]));
                 req_ctxs[i]->is_valid = false;
         }        
 }
