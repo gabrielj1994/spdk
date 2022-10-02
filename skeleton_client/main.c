@@ -555,6 +555,11 @@ static void main_loop(void) {
         // dummy_ctx->resp_data;
 	
 	/* The main event loop. */
+        // Receive response
+        uint64_t hz = rte_get_timer_hz(); 
+        uint64_t begin = rte_rdtsc_precise(); 
+        uint64_t elapsed_cycles;
+        uint64_t microseconds = 0;
 	while (1)  {
                 //TODO: Remove test block
                 // ctx = recv_req_from_client();
@@ -562,10 +567,9 @@ static void main_loop(void) {
                 bufs[0] = rte_pktmbuf_alloc(mbuf_pool);
                 send_request_to_server(dummy_ctx);
                 // Receive response
-                uint64_t hz = rte_get_timer_hz(); 
-                uint64_t begin = rte_rdtsc_precise(); 
-                uint64_t elapsed_cycles;
-                uint64_t microseconds = 0;
+                begin = rte_rdtsc_precise(); 
+                elapsed_cycles = 0;
+                microseconds = 0;                
                 while (microseconds < 10000000) {
                         // 10 second time out
                         const uint16_t nb_rx = rte_eth_rx_burst(LAB2_PORT_ID, 0,
