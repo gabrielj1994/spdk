@@ -107,10 +107,10 @@ struct rte_mempool *mbuf_pool;
 struct rte_mbuf *bufs[BURST_SIZE];
 
 // Telemetry
-uint64_t hz; = rte_get_timer_hz(); 
-uint64_t begin; = rte_rdtsc_precise(); 
+uint64_t hz;
+uint64_t begin;
 uint64_t elapsed_cycles;
-uint64_t microseconds; = 0;
+uint64_t microseconds;
 
 volatile bool is_timing;
 
