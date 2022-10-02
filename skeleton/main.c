@@ -635,7 +635,7 @@ static void main_loop(void) {
                 // } else {
                 //         ctx->op = READ;
                 // }
-                sleep(3);
+                // sleep(3);
 	}
 }
 
