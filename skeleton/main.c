@@ -252,7 +252,7 @@ static void send_resp_to_client(struct rte_mbuf *bufs[], struct req_context *req
         microseconds = elapsed_cycles * 1000000 / hz;
         printf("\nLOGGING: Latency Information [packet_count=%d, internal_latency=%" PRIu64 " microseconds]\n", pkt_count, microseconds);
         is_timing = false;
-        free(req_ctxs);
+        // free(req_ctxs);
         // rte_pktmbuf_free(bufs);
 }
 
