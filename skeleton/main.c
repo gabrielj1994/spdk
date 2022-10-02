@@ -319,6 +319,7 @@ static void recv_req_from_client(struct req_context *ctx) {
                 // Arbitrarily Chose RTE_ETHER_TYPE_ARP to define our request packets
                 if (ctx->ether_hdr->ether_type != rte_cpu_to_be_16(RTE_ETHER_TYPE_ARP)) {
                         printf("\nLOGGING: Noise on Port. Dropping Packet\n");
+                        nb_rx = 0;
                         continue;
                 }
                 printf("\nLOGGING: Retrieving Request Information\n");
@@ -329,6 +330,7 @@ static void recv_req_from_client(struct req_context *ctx) {
                 printf("\nLOGGING: Populated Context Values [op=%d]\n", ctx->op);
                 if (ctx->op != WRITE && ctx->op != READ) {
                         printf("\nLOGGING: Invalid OP Value. Dropping Packet\n");
+                        nb_rx = 0;
                         continue;
                 }
                 printf("\nLOGGING: Populating Context Values [data]\n");
