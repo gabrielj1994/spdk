@@ -103,11 +103,8 @@ struct callback_args {
 };
 
 static struct spdk_nvme_qpair *qpair;
-static struct callback_args cb_args[BURST_SIZE];
 
 struct rte_mempool *mbuf_pool;
-struct rte_mbuf *bufs[BURST_SIZE];
-struct req_context *req_ctxs[BURST_SIZE];
 
 // Telemetry
 uint64_t hz;
@@ -511,7 +508,8 @@ static void recv_req_from_client() {
 //LAB 2
 static void allocate_contexts(void) {
         printf("\nLOGGING: Allocating contexts\n");
-        req_ctxs = malloc(sizeof(*req_ctxs)*BURST_SIZE); 
+        static struct req_context *req_ctxs[BURST_SIZE];
+
         for (int i = 0; i < BURST_SIZE; i++) {
                 req_ctxs[i]->is_valid = false;
         }        
@@ -556,8 +554,10 @@ static void main_loop(void) {
 
 	/* The main event loop. */
 	while (1) {
-                cb_args = malloc(sizeof(*cb_args)*BURST_SIZE); 
-                bufs = malloc(sizeof(*bufs)*BURST_SIZE);
+                static struct callback_args cb_args[BURST_SIZE];
+                static struct rte_mbuf *bufs[BURST_SIZE];
+                // cb_args = malloc(sizeof(*cb_args)*BURST_SIZE); 
+                // bufs = malloc(sizeof(*bufs)*BURST_SIZE);
                 allocate_contexts();
                 //TODO: Remove test block
                 printf("\nLOGGING: Process context\n");
