@@ -352,6 +352,7 @@ static void main_loop(void) {
                 if (ack_counter < 10) {
                         sleep(5);
                 } else if (ack_counter == 10) {
+                        printf("\nLOGGING: SPDK Throughput Window Metrics [response_count=%lu, time=%" PRIu64 " microseconds]\n", ack_counter, microseconds);
                         microseconds = 0;
                         request_counter = 0;
                         ack_counter = 0;
