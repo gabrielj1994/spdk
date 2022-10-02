@@ -72,9 +72,8 @@ struct request_packet {
 
 struct response_packet {
         /* Request fields. */
-        enum opcode op;
-        uint64_t lba;         /* The LBA of the request. */
-        uint8_t *req_data;    /* The request data (valid for write requests). */
+        bool is_success;
+        uint8_t *req_data;    /* The request data (valid for read requests). */
 };
 
 struct req_context {
@@ -203,16 +202,32 @@ port_init(uint16_t port, struct rte_mempool *mbuf_pool) {
  * This function should be invoked by SPDK's callback functions.
  * For the first step, use a mock implementation here to test main_loop().
  */
-static void send_resp_to_client(struct callback_args *cb_args) {
+static void send_resp_to_client(struct callback_args *args) {
         /* PUT YOUR CODE HERE */
         printf("\nLOGGING: Send Response to Client\n");
         struct rte_ether_addr ether_src;
         struct rte_ether_hdr *ether_hdr = rte_pktmbuf_mtod_offset(bufs[0], struct rte_ether_hdr *, 0);
 
-        //ether frame
+        // Ether frame
         rte_ether_addr_copy(&ether_hdr->src_addr, &ether_src);
         rte_ether_addr_copy(&ether_hdr->dst_addr, &ether_hdr->src_addr);
         rte_ether_addr_copy(&ether_src, &ether_hdr->dst_addr);
+
+        // Response Packet
+        unsigned long state_size = sizeof(args->req_ctx->is_success);
+        unsigned long eth_hdr_size = sizeof(*ether_hdr);
+        unsigned long data_size = 0;
+
+        // Copy response data into read
+        if (args->req_ctx->op == READ) {
+                data_size += sizeof(args->req_ctx->req_data/args->req_ctx->req_data[0]);
+        }
+        printf("\nLOGGING: Packet Size Information [eth_hdr=%lu, state_size=%lu, data_size=%lu]\n", eth_hdr_size, state_size, data_size);
+        char *data;
+
+        data = rte_pktmbuf_mtod(bufs[0], char*);
+        memcpy(&data[eth_hdr_size], &args->req_ctx->is_success, state_size);                
+        memcpy(&data[eth_hdr_size+state_size], args->req_ctx->req_data, data_size);        
 
         rte_eth_tx_burst(LAB2_PORT_ID, 0, bufs, 1);
 }
@@ -229,8 +244,10 @@ static void write_complete(void *args, const struct spdk_nvme_cpl *completion) {
                 fprintf(stderr, "I/O error status: %s\n",
                         spdk_nvme_cpl_get_status_string(&completion->status));
                 fprintf(stderr, "Failed to write, aborting run\n");
-                exit(1);
+                args_ptr->req_ctx->is_success = false;
         }
+        args_ptr->req_ctx->is_success = true;
+        send_resp_to_client(args_ptr);
 }
 
 static void read_complete(void *args, const struct spdk_nvme_cpl *completion) {
@@ -244,12 +261,13 @@ static void read_complete(void *args, const struct spdk_nvme_cpl *completion) {
                 fprintf(stderr, "I/O error status: %s\n",
                         spdk_nvme_cpl_get_status_string(&completion->status));
                 fprintf(stderr, "Failed to read, aborting run\n");
-                exit(1);
+                args_ptr->req_ctx->is_success = false;
         }
 
         /* Unblock the while loop in main_loop(). */
         args_ptr->done = true;
-        printf("\nLOGGING: [data=%s]\n", args_ptr->buf);
+        printf("\nLOGGING: [data=\n%s\n]\n", args_ptr->buf);
+        args_ptr->req_ctx->is_success = true;
         send_resp_to_client(args_ptr);
 }
 
@@ -282,15 +300,15 @@ static void recv_req_from_client(struct req_context *ctx) {
                 // char *data;
 
                 // data = rte_pktmbuf_mtod(bufs[0], char*);
-                char *prtp = rte_pktmbuf_mtod(bufs[0], char*);
-                uint16_t counter = 0;
-                while (counter < 34) {
-                        printf("%02hhx ", *prtp);
-                        ++counter;
-                        if (counter % 4 == 0)
-                                printf("\n");
-                        ++prtp;
-                }
+                // char *prtp = rte_pktmbuf_mtod(bufs[0], char*);
+                // uint16_t counter = 0;
+                // while (counter < 34) {
+                //         printf("%02hhx ", *prtp);
+                //         ++counter;
+                //         if (counter % 4 == 0)
+                //                 printf("\n");
+                //         ++prtp;
+                // }
 
                 // struct rte_ether_hdr *ether_hdr;
                 // struct rte_ether_addr ether_src;
@@ -304,24 +322,21 @@ static void recv_req_from_client(struct req_context *ctx) {
                         continue;
                 }
                 printf("\nLOGGING: Retrieving Request Information\n");
-                // req_pkt = rte_pktmbuf_mtod_offset(bufs[0], struct request_packet *, sizeof(struct rte_ether_hdr));
                 char *data = rte_pktmbuf_mtod_offset(bufs[0], char *, sizeof(struct rte_ether_hdr));
-                // printf("\nLOGGING: Populating Context Values [lba=%lu]\n", req_pkt->lba);
                 memcpy(&ctx->lba, data, sizeof(ctx->lba));
                 printf("\nLOGGING: Populated Context Values [lba=%lu]\n", ctx->lba);
-                // ctx->lba = req_pkt->lba;
                 memcpy(&ctx->op, &data[sizeof(ctx->lba)], sizeof(ctx->op));
                 printf("\nLOGGING: Populated Context Values [op=%d]\n", ctx->op);
                 if (ctx->op != WRITE && ctx->op != READ) {
                         printf("\nLOGGING: Invalid OP Value. Dropping Packet\n");
                         continue;
                 }
-                // ctx->op = req_pkt->op;
                 printf("\nLOGGING: Populating Context Values [data]\n");
-                // ctx->req_data = malloc(sizeof(req_pkt->req_data)/sizeof(req_pkt->req_data[0]));
-                ctx->req_data = malloc(8);
-                memcpy(ctx->req_data, &data[sizeof(ctx->lba)+sizeof(ctx->op)], 8);
-                printf("\nLOGGING: Received Context Information [op=%d, lba=%lu, req_data=%hhu]\n", ctx->op, ctx->lba, ctx->req_data[0]);
+                if (ctx->op == WRITE) {
+                        unsigned long data_size = sizeof(req_pkt->req_data)/sizeof(req_pkt->req_data[0]);
+                        ctx->req_data = malloc(data_size);
+                        memcpy(ctx->req_data, &data[sizeof(ctx->lba)+sizeof(ctx->op)], data_size);
+                }
         }
 }
 
@@ -411,7 +426,7 @@ static void handle_write_req(struct req_context *ctx) {
 
         /* Write the string into the buffer.  */
         // snprintf(cb_args.buf, sector_sz, "%s", "Hello world!\n");
-        memcpy(cb_args.buf, ctx->req_data, 8);
+        memcpy(cb_args.buf, ctx->req_data, sizeof(ctx->req_data)/sizeof(ctx->req_data[0]));
 
         /* Submit a cmd to write data into the 1st sector. */
         rc = spdk_nvme_ns_cmd_write(
@@ -458,8 +473,7 @@ static void main_loop(void) {
 	
         printf("\nLOGGING: SPDK ZMalloc\n");
         int sector_sz = spdk_nvme_ns_get_sector_size(selected_ns);
-        cb_args.buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
-                                   SPDK_ENV_SOCKET_ID_ANY, SPDK_MALLOC_DMA);
+        
 
         if (!cb_args.buf) {
                 fprintf(stderr, "Failed to allocate buffer\n");
@@ -470,6 +484,8 @@ static void main_loop(void) {
 	while (1) {
                 //TODO: Remove test block
                 printf("\nLOGGING: Process context\n");
+                cb_args.buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
+                                   SPDK_ENV_SOCKET_ID_ANY, SPDK_MALLOC_DMA);
                 bufs[0] = rte_pktmbuf_alloc(mbuf_pool);
                 recv_req_from_client(ctx);
                 // ctx = dummy_ctx;
@@ -489,6 +505,7 @@ static void main_loop(void) {
                 //         ctx->op = READ;
                 // }
                 rte_pktmbuf_free(bufs[0]);
+                spdk_free(cb_args.buf);
                 sleep(3);
 	}
 }

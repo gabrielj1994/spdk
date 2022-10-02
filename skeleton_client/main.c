@@ -310,26 +310,26 @@ static void send_request_to_server(struct req_context *ctx) {
         mbuf->pkt_len = packet_size;
 
         // TODO: Remove sanity check
-        char *prtp = (char *)data;
-        uint16_t counter = 0;
-        while (counter < packet_size+8) {
-        	printf("%02hhx ", *prtp);
-        	++counter;
-        	if (counter % 4 == 0)
-        		printf("\n");
-        	++prtp;
-        }
-        printf("\n\n");
+        // char *prtp = (char *)data;
+        // uint16_t counter = 0;
+        // while (counter < packet_size+8) {
+        // 	printf("%02hhx ", *prtp);
+        // 	++counter;
+        // 	if (counter % 4 == 0)
+        // 		printf("\n");
+        // 	++prtp;
+        // }
+        // printf("\n\n");
 
-        prtp = (char *)req_pkt;
-        counter = 0;
-        while (counter < req_size+4) {
-        	printf("%02hhx ", *prtp);
-        	++counter;
-        	if (counter % 4 == 0)
-        		printf("\n");
-        	++prtp;
-        }
+        // prtp = (char *)req_pkt;
+        // counter = 0;
+        // while (counter < req_size+4) {
+        // 	printf("%02hhx ", *prtp);
+        // 	++counter;
+        // 	if (counter % 4 == 0)
+        // 		printf("\n");
+        // 	++prtp;
+        // }
         /*
         ==
         new way
@@ -403,7 +403,8 @@ static void send_request_to_server(struct req_context *ctx) {
         /* Send request through TX packets. */
         const uint16_t nb_tx = rte_eth_tx_burst(LAB2_PORT_ID, 0,
                         bufs, request_size);
-        
+
+        free(request);        
         printf("\nLOGGING: Request Sent\n");
 }
 
