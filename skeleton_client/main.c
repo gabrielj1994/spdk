@@ -573,6 +573,11 @@ static void main_loop(void) {
                         elapsed_cycles = rte_rdtsc_precise() - begin; 
                         microseconds = elapsed_cycles * 1000000 / hz;
                         if (nb_rx != 0) {
+                                struct rte_ether_hdr *ether_hdr = rte_pktmbuf_mtod_offset(bufs[0], struct rte_ether_hdr *, 0);
+                                if (ctx->ether_hdr->ether_type != rte_cpu_to_be_16(RTE_ETHER_TYPE_ARP)) {
+                                        printf("\nLOGGING: Noise on Port. Dropping Packet\n");
+                                        continue;
+                                }
                                 break;
                         } 
                 }
