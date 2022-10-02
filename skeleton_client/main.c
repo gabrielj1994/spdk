@@ -294,7 +294,8 @@ static void main_loop(void) {
 
         begin = rte_rdtsc_precise(); 
         elapsed_cycles = 0;
-        microseconds = 0;        
+        microseconds = 0;
+        bool is_initializing = true;
 	while (1)  {
                 //TODO: Remove test block
                 // printf("\nLOGGING: Process context\n");
@@ -325,7 +326,6 @@ static void main_loop(void) {
                 //         printf("\nLOGGING: SPDK Request timeout after 10 seconds\n");
                 // }
 
-                bool is_initializing = true;
                 const uint16_t nb_rx = rte_eth_rx_burst(LAB2_PORT_ID, 0,
                 bufs, BURST_SIZE);
                 if (nb_rx != 0) {
