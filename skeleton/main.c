@@ -423,14 +423,15 @@ static void handle_write_req(struct callback_args *cb_args, struct req_context *
         }
 }
 
-bool requests_unfinished(struct callback_args *cb_args[]) {
+bool requests_unfinished(struct req_context *req_ctxs[], struct callback_args *cb_args[]) {
         printf("\nLOGGING: Checking for Unfinished Requests\n");
 
         for (int i = 0; i < BURST_SIZE; i++) {
-                if (!cb_args[i]->done && cb_args[i]->req_ctx->is_valid) {
+                if (req_ctxs[i]->is_valid && !cb_args[i]->done) {
                         return false;
                 }
         }
+        printf("\nLOGGING: All Requests Finished\n");
         return true;
 }
 
@@ -520,7 +521,7 @@ struct callback_args cb_args[BURST_SIZE];
 
                         printf("\nLOGGING: SPDK ZMalloc\n");
                         sector_sz = spdk_nvme_ns_get_sector_size(selected_ns);
-                        cb_args[pkt_counter] = malloc(sizeof(*cb_args[pkt_counter]));
+                        // cb_args[pkt_counter] = malloc(sizeof(*cb_args[pkt_counter]));
                         cb_args[pkt_counter]->buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
                                                 SPDK_ENV_SOCKET_ID_ANY, SPDK_MALLOC_DMA);
                         ctx->packet_num = pkt_counter;
@@ -538,7 +539,7 @@ struct callback_args cb_args[BURST_SIZE];
 
                 // Stall here until all ops are marked done
                 // Requests must be processed before state is reset
-                while (requests_unfinished(cb_args)) {
+                while (requests_unfinished(req_ctxs, cb_args)) {
                         printf("\nLOGGING: Ensuring Requests are Completed\n");
                         spdk_process_completions();
                 }
@@ -547,12 +548,14 @@ struct callback_args cb_args[BURST_SIZE];
 }
 
 //LAB 2
-static void allocate_contexts(struct req_context *req_ctxs[]) {
+static void allocate_contexts(struct req_context *req_ctxs[], struct callback_args *cb_args[]) {
         printf("\nLOGGING: Initializing contexts as invalid\n");
         for (int i = 0; i < BURST_SIZE; i++) {
                 req_ctxs[i] = malloc(sizeof(*req_ctxs[i]));
                 req_ctxs[i]->is_valid = false;
                 req_ctxs[i]->is_success = true;
+                cb_args[i] = malloc(sizeof(*cb_args[i]));
+                cb_args[i]->done = false;
         }        
 }
 
