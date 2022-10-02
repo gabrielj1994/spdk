@@ -326,7 +326,7 @@ static void main_loop(void) {
                 } else {
                         printf("\nLOGGING: SPDK Request timeout after 10 seconds\n");
                 }
-                sleep(1)
+                sleep(1);
 
                 // Throughput Test Configuration
                 // const uint16_t nb_rx = rte_eth_rx_burst(LAB2_PORT_ID, 0,
