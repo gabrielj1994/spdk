@@ -433,8 +433,7 @@ struct callback_args cb_args[BURST_SIZE];
                         continue;
                 }
 
-                uint16_t pkt_counter = 0;
-                while (pkt_counter < nb_rx) {
+                for (uint16_t pkt_counter = 0; pkt_counter < nb_rx; pkt_counter++ ) {
                         printf("\nLOGGING: Received RX Burst\n");
 
                         // TODO: Remove sanity check
@@ -505,7 +504,6 @@ struct callback_args cb_args[BURST_SIZE];
                                         handle_write_req(cb_args[ctx->packet_num], ctx);
                                 }
                         }
-                        pkt_counter++;
                 }
 
                 spdk_process_completions();
@@ -597,7 +595,7 @@ static void main_loop(void) {
                 // } else {
                 //         ctx->op = READ;
                 // }
-                // sleep(3);
+                sleep(3);
 	}
 }
 
