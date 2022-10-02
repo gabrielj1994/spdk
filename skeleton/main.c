@@ -517,6 +517,7 @@ static void allocate_contexts(struct req_context *req_ctxs[]) {
         for (int i = 0; i < BURST_SIZE; i++) {
                 req_ctxs[i] = malloc(sizeof(*req_ctxs[i]));
                 req_ctxs[i]->is_valid = false;
+                req_ctxs[i]->is_success = true;
         }        
 }
 
