@@ -106,6 +106,14 @@ static struct callback_args cb_args;
 struct rte_mempool *mbuf_pool;
 struct rte_mbuf *bufs[BURST_SIZE];
 
+// Telemetry
+uint64_t hz; = rte_get_timer_hz(); 
+uint64_t begin; = rte_rdtsc_precise(); 
+uint64_t elapsed_cycles;
+uint64_t microseconds; = 0;
+
+volatile bool is_timing;
+
 //LAB 2
 /*
  * Initializes a given port using global settings and with the RX buffers
@@ -230,6 +238,10 @@ static void send_resp_to_client(struct callback_args *args) {
         memcpy(&data[eth_hdr_size+state_size], args->req_ctx->req_data, data_size);        
 
         rte_eth_tx_burst(LAB2_PORT_ID, 0, bufs, 1);
+        elapsed_cycles = rte_rdtsc_precise() - begin; 
+        microseconds = elapsed_cycles * 1000000 / hz;
+        printf("\nLOGGING: Latency Information [single_packet_latency=%" PRIu64 " microseconds]\n", microseconds);
+        is_timing = false;
 }
 
 static void write_complete(void *args, const struct spdk_nvme_cpl *completion) {
@@ -453,9 +465,12 @@ static void handle_write_req(struct req_context *ctx) {
  * The main application logic.
  */
 static void main_loop(void) {
-	// struct req_context *dummy_ctx;
 	struct req_context *ctx = malloc(sizeof *ctx);
-        // ctx->req_data = malloc(sizeof ctx->req_data);
+        // uint64_t hz; = rte_get_timer_hz(); 
+        // uint64_t begin; = rte_rdtsc_precise(); 
+        // uint64_t elapsed_cycles;
+        // uint64_t microseconds; = 0;
+        is_timing = false;
 
 
 	/* PUT YOUR CODE HERE */
@@ -497,6 +512,12 @@ static void main_loop(void) {
                 recv_req_from_client(ctx);
                 // ctx = dummy_ctx;
                 if (ctx) {
+                        if (!is_timing) {
+                                is_timing = true;
+                                hz = rte_get_timer_hz(); 
+                                begin = rte_rdtsc_precise(); 
+                        }
+
                         if (ctx->op == READ) {
                                 handle_read_req(ctx);
                         } else {
@@ -513,7 +534,7 @@ static void main_loop(void) {
                 // }
                 rte_pktmbuf_free(bufs[0]);
                 spdk_free(cb_args.buf);
-                sleep(3);
+                // sleep(3);
 	}
 }
 
