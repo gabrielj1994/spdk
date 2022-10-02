@@ -242,6 +242,7 @@ static void send_resp_to_client(struct rte_mbuf *bufs[], struct req_context *req
                 memcpy(&data[eth_hdr_size], &req_ctxs[i]->is_success, state_size);                
                 memcpy(&data[eth_hdr_size+state_size], req_ctxs[i]->req_data, data_size);
                 pkt_count = i+1;
+                spdk_free(cb_args[1].buf);
         }     
                
         rte_eth_tx_burst(LAB2_PORT_ID, 0, bufs, pkt_count);
@@ -249,6 +250,8 @@ static void send_resp_to_client(struct rte_mbuf *bufs[], struct req_context *req
         microseconds = elapsed_cycles * 1000000 / hz;
         printf("\nLOGGING: Latency Information [packet_count=%d, internal_latency=%" PRIu64 " microseconds]\n", pkt_count, microseconds);
         is_timing = false;
+        free(req_ctxs);
+        // rte_pktmbuf_free(bufs);
 }
 
 static void write_complete(void *args, const struct spdk_nvme_cpl *completion) {
@@ -565,10 +568,10 @@ static void main_loop(void) {
                 printf("\nLOGGING: Process context\n");
                 // cb_args.buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
                 //                    SPDK_ENV_SOCKET_ID_ANY, SPDK_MALLOC_DMA);
-                if (!cb_args.buf) {
-                        fprintf(stderr, "Failed to allocate buffer\n");
-                        exit(1);
-                }
+                // if (!cb_args.buf) {
+                //         fprintf(stderr, "Failed to allocate buffer\n");
+                //         exit(1);
+                // }
                 // bufs[0] = rte_pktmbuf_alloc(mbuf_pool);
                 recv_req_from_client(bufs, req_ctxs, cb_args);
                 // ctx = dummy_ctx;
@@ -593,9 +596,6 @@ static void main_loop(void) {
                 // } else {
                 //         ctx->op = READ;
                 // }
-                free(req_ctxs);
-                rte_pktmbuf_free(bufs);
-                spdk_free(cb_args.buf);
                 // sleep(3);
 	}
 }
