@@ -539,7 +539,7 @@ struct callback_args cb_args[BURST_SIZE];
 
                 // Stall here until all ops are marked done
                 // Requests must be processed before state is reset
-                while (requests_unfinished(req_ctxs, cb_args)) {
+                while (!requests_unfinished(req_ctxs, cb_args)) {
                         printf("\nLOGGING: Ensuring Requests are Completed\n");
                         spdk_process_completions();
                 }
