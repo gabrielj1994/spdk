@@ -475,10 +475,7 @@ static void main_loop(void) {
         int sector_sz = spdk_nvme_ns_get_sector_size(selected_ns);
         
 
-        if (!cb_args.buf) {
-                fprintf(stderr, "Failed to allocate buffer\n");
-                exit(1);
-        }
+        
 
 	/* The main event loop. */
 	while (1) {
@@ -486,6 +483,10 @@ static void main_loop(void) {
                 printf("\nLOGGING: Process context\n");
                 cb_args.buf = spdk_zmalloc(sector_sz, sector_sz, NULL,
                                    SPDK_ENV_SOCKET_ID_ANY, SPDK_MALLOC_DMA);
+                if (!cb_args.buf) {
+                        fprintf(stderr, "Failed to allocate buffer\n");
+                        exit(1);
+                }
                 bufs[0] = rte_pktmbuf_alloc(mbuf_pool);
                 recv_req_from_client(ctx);
                 // ctx = dummy_ctx;
